@@ -25,7 +25,7 @@ GameListWidget::GameListWidget(QWidget *parent)
 
 void GameListWidget::setUpdateBanner(const QString &version, const QString &url) {
     m_updateBanner->setText(
-        QString("<b>A new scroll has arrived!</b> Version %1 is available. "
+        QString("<b>Update available!</b> Version %1 — "
                 "<a href='%2' style='color: #c4972a;'>Download from Nexus</a>")
             .arg(version, url));
     m_updateBanner->setOpenExternalLinks(true);
@@ -67,7 +67,7 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
     );
     titleLayout->addWidget(titleLabel);
 
-    auto *subtitleLabel = new QLabel("Choose thy realm to restore", titleWidget);
+    auto *subtitleLabel = new QLabel("Select a game to patch", titleWidget);
     subtitleLabel->setAlignment(Qt::AlignCenter);
     subtitleLabel->setStyleSheet(
         "font-size: 12px; color: #8a7a5a; font-style: italic; "

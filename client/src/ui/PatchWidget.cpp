@@ -2,11 +2,14 @@
 #include "engine/HashCache.h"
 #include <QScrollBar>
 #include <QFrame>
+#include <QHeaderView>
 
 PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     : QWidget(parent)
     , m_apiClient(apiClient)
     , m_patcher(new Patcher(apiClient, 4, this))
+    , m_manifestsToLoad(0)
+    , m_manifestsLoaded(0)
 {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(24, 16, 24, 16);
@@ -14,7 +17,7 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
 
     // Header
     auto *header = new QHBoxLayout();
-    m_backBtn = new QPushButton("\u2190 Return", this);
+    m_backBtn = new QPushButton("\u2190 Back", this);
     m_backBtn->setStyleSheet(
         "border: 1px solid #5c3d2e; background: transparent; "
         "color: #8a7a5a; padding: 6px 14px; font-size: 11px;"
@@ -26,13 +29,12 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     m_gameLabel->setAlignment(Qt::AlignCenter);
     header->addWidget(m_backBtn);
     header->addWidget(m_gameLabel, 1);
-    // Spacer to center the title
     auto *spacer = new QWidget(this);
     spacer->setFixedWidth(m_backBtn->sizeHint().width());
     header->addWidget(spacer);
     layout->addLayout(header);
 
-    // Decorative divider
+    // Divider
     auto *divider = new QFrame(this);
     divider->setFrameShape(QFrame::HLine);
     divider->setStyleSheet(
@@ -43,43 +45,48 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     );
     layout->addWidget(divider);
 
-    // Version info section
-    auto *versionSection = new QWidget(this);
-    auto *versionLayout = new QVBoxLayout(versionSection);
-    versionLayout->setContentsMargins(0, 8, 0, 8);
-    versionLayout->setSpacing(12);
-
+    // Version info
     m_versionLabel = new QLabel(this);
-    m_versionLabel->setStyleSheet("color: #8a7a5a; font-size: 13px;");
-    versionLayout->addWidget(m_versionLabel);
+    m_versionLabel->setStyleSheet("color: #8a7a5a; font-size: 13px; padding: 8px 0 4px 0;");
+    layout->addWidget(m_versionLabel);
 
     // Target selector
-    auto *targetWidget = new QWidget(versionSection);
+    auto *targetWidget = new QWidget(this);
     auto *targetLayout = new QHBoxLayout(targetWidget);
     targetLayout->setContentsMargins(0, 0, 0, 0);
-    auto *targetLabel = new QLabel("Restore to:", targetWidget);
+    auto *targetLabel = new QLabel("Target version:", targetWidget);
     targetLabel->setStyleSheet("color: #b0a080; font-size: 13px; font-weight: bold;");
     targetLayout->addWidget(targetLabel);
     m_targetCombo = new QComboBox(targetWidget);
     m_targetCombo->setMinimumWidth(200);
     targetLayout->addWidget(m_targetCombo);
     targetLayout->addStretch();
-    versionLayout->addWidget(targetWidget);
+    layout->addWidget(targetWidget);
 
-    layout->addWidget(versionSection);
-
-    // Scan results panel
-    m_scanResultsLabel = new QLabel(this);
-    m_scanResultsLabel->setStyleSheet(
-        "background: #1a1208; border: 2px solid #4a3520; border-radius: 6px; "
-        "padding: 12px; font-size: 12px; line-height: 1.6;"
+    // Scan summary label
+    m_scanSummaryLabel = new QLabel(this);
+    m_scanSummaryLabel->setStyleSheet(
+        "color: #8a7a5a; font-size: 12px; padding: 6px 0 2px 0;"
     );
-    m_scanResultsLabel->setVisible(false);
-    m_scanResultsLabel->setWordWrap(true);
-    layout->addWidget(m_scanResultsLabel);
+    m_scanSummaryLabel->setVisible(false);
+    layout->addWidget(m_scanSummaryLabel);
+
+    // Scan results tree
+    m_scanTree = new QTreeWidget(this);
+    m_scanTree->setHeaderHidden(true);
+    m_scanTree->setRootIsDecorated(true);
+    m_scanTree->setVisible(false);
+    m_scanTree->setMaximumHeight(200);
+    m_scanTree->setStyleSheet(
+        "QTreeWidget { background: #140e08; border: 2px solid #4a3520; border-radius: 4px; "
+        "  font-size: 11px; padding: 4px; }"
+        "QTreeWidget::item { padding: 2px 0; }"
+        "QTreeWidget::branch { border: none; }"
+    );
+    layout->addWidget(m_scanTree);
 
     // Patch button
-    m_patchBtn = new QPushButton("Begin Restoration", this);
+    m_patchBtn = new QPushButton("Start Patching", this);
     m_patchBtn->setStyleSheet(
         "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
@@ -98,35 +105,27 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     layout->addWidget(m_patchBtn);
 
     // Progress section
-    auto *progressSection = new QWidget(this);
-    auto *progressLayout = new QVBoxLayout(progressSection);
-    progressLayout->setContentsMargins(0, 0, 0, 0);
-    progressLayout->setSpacing(6);
+    m_overallProgressLabel = new QLabel("Overall Progress", this);
+    m_overallProgressLabel->setStyleSheet("color: #8a7a5a; font-size: 11px; font-weight: bold; letter-spacing: 1px;");
+    m_overallProgressLabel->setVisible(false);
+    layout->addWidget(m_overallProgressLabel);
 
-    auto *overallLabel = new QLabel("Overall Progress", progressSection);
-    overallLabel->setStyleSheet("color: #8a7a5a; font-size: 11px; font-weight: bold; letter-spacing: 1px;");
-    overallLabel->setVisible(false);
-    progressLayout->addWidget(overallLabel);
-    m_overallProgressLabel = overallLabel;
-
-    m_overallProgress = new QProgressBar(progressSection);
+    m_overallProgress = new QProgressBar(this);
     m_overallProgress->setVisible(false);
     m_overallProgress->setTextVisible(true);
     m_overallProgress->setFormat("%v / %m files");
-    progressLayout->addWidget(m_overallProgress);
+    layout->addWidget(m_overallProgress);
 
-    m_fileProgressLabel = new QLabel(progressSection);
+    m_fileProgressLabel = new QLabel(this);
     m_fileProgressLabel->setStyleSheet("color: #8a7a5a; font-size: 11px;");
     m_fileProgressLabel->setVisible(false);
-    progressLayout->addWidget(m_fileProgressLabel);
+    layout->addWidget(m_fileProgressLabel);
 
-    m_fileProgress = new QProgressBar(progressSection);
+    m_fileProgress = new QProgressBar(this);
     m_fileProgress->setVisible(false);
     m_fileProgress->setTextVisible(true);
     m_fileProgress->setFormat("chunk %v / %m");
-    progressLayout->addWidget(m_fileProgress);
-
-    layout->addWidget(progressSection);
+    layout->addWidget(m_fileProgress);
 
     // Log
     m_log = new QTextEdit(this);
@@ -141,7 +140,6 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     connect(m_backBtn, &QPushButton::clicked, this, &PatchWidget::backRequested);
     connect(m_targetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PatchWidget::onTargetVersionChanged);
     connect(m_apiClient, &ApiClient::manifestIndexReady, this, &PatchWidget::onManifestIndexReady);
-    connect(m_apiClient, &ApiClient::manifestReady, this, &PatchWidget::onManifestReady);
     connect(m_patchBtn, &QPushButton::clicked, this, &PatchWidget::onStartPatching);
     connect(m_patcher, &Patcher::progressUpdated, this, &PatchWidget::onPatchProgress);
     connect(m_patcher, &Patcher::fileCompleted, this, &PatchWidget::onFileCompleted);
@@ -154,6 +152,9 @@ void PatchWidget::setGame(const QString &gameSlug, const QString &installPath,
     m_gameSlug = gameSlug;
     m_installPath = installPath;
     m_games = games;
+    m_allManifests.clear();
+    m_knownHashes.clear();
+    m_knownPaths.clear();
 
     for (const auto &g : games) {
         if (g.slug == gameSlug) {
@@ -162,9 +163,11 @@ void PatchWidget::setGame(const QString &gameSlug, const QString &installPath,
         }
     }
 
-    m_versionLabel->setText("Consulting the archives...");
+    m_versionLabel->setText("Loading version data...");
     m_targetCombo->clear();
-    m_scanResultsLabel->setVisible(false);
+    m_scanSummaryLabel->setVisible(false);
+    m_scanTree->setVisible(false);
+    m_scanTree->clear();
     m_patchBtn->setVisible(false);
     m_overallProgress->setVisible(false);
     m_overallProgressLabel->setVisible(false);
@@ -179,50 +182,104 @@ void PatchWidget::setGame(const QString &gameSlug, const QString &installPath,
 void PatchWidget::onManifestIndexReady(const QString &gameSlug, const ManifestIndex &index) {
     if (gameSlug != m_gameSlug) return;
 
+    m_manifestIndex = index;
+
+    // Detect installed version
     for (const auto &game : m_games) {
         if (game.slug != gameSlug) continue;
         QString exePath = m_installPath + "/" + game.exePath;
         QString exeHash = GameScanner::hashFile(exePath);
         if (index.versions.contains(exeHash)) {
             m_versionLabel->setText(
-                QString("Current inscription: <b style='color: #c4972a;'>%1</b>")
+                QString("Current version: <b style='color: #c4972a;'>%1</b>")
                     .arg(index.versions[exeHash]));
         } else {
             m_versionLabel->setText(
-                "Current inscription: <b style='color: #a05a2a;'>Unknown</b> "
+                "Current version: <b style='color: #a05a2a;'>Unknown</b> "
                 "<span style='color: #6a5a3a; font-size: 11px;'>(modified or unrecognized)</span>");
         }
         break;
     }
 
+    // Fetch ALL manifests to build complete known hash set
     QSet<QString> versions;
     for (auto it = index.versions.begin(); it != index.versions.end(); ++it) {
         versions.insert(it.value());
     }
+
+    m_manifestsToLoad = versions.size();
+    m_manifestsLoaded = 0;
+    m_versionLabel->setText(m_versionLabel->text() +
+        QString(" <span style='color: #6a5a3a; font-size: 11px;'>(loading %1 manifests...)</span>")
+            .arg(m_manifestsToLoad));
+
+    // Connect the manifest-ready signal for bulk loading
+    disconnect(m_apiClient, &ApiClient::manifestReady, this, nullptr);
+    connect(m_apiClient, &ApiClient::manifestReady, this, &PatchWidget::onAllManifestReady);
+
     for (const auto &v : versions) {
-        m_targetCombo->addItem(v);
+        m_apiClient->fetchManifest(gameSlug, v);
+    }
+}
+
+void PatchWidget::onAllManifestReady(const QString &gameSlug, const Manifest &manifest) {
+    if (gameSlug != m_gameSlug) return;
+
+    m_allManifests[manifest.version] = manifest;
+
+    // Aggregate hashes and paths from this manifest
+    for (const auto &f : manifest.files) {
+        m_knownHashes.insert(f.xxhash3);
+        m_knownPaths.insert(f.path);
+    }
+
+    ++m_manifestsLoaded;
+
+    if (m_manifestsLoaded >= m_manifestsToLoad) {
+        // All manifests loaded — populate the dropdown
+        // Remove the "loading manifests" text
+        for (const auto &game : m_games) {
+            if (game.slug != m_gameSlug) continue;
+            QString exePath = m_installPath + "/" + game.exePath;
+            QString exeHash = GameScanner::hashFile(exePath);
+            if (m_manifestIndex.versions.contains(exeHash)) {
+                m_versionLabel->setText(
+                    QString("Current version: <b style='color: #c4972a;'>%1</b>")
+                        .arg(m_manifestIndex.versions[exeHash]));
+            } else {
+                m_versionLabel->setText(
+                    "Current version: <b style='color: #a05a2a;'>Unknown</b>");
+            }
+            break;
+        }
+
+        QStringList versions = m_allManifests.keys();
+        versions.sort();
+        for (const auto &v : versions) {
+            m_targetCombo->addItem(v);
+        }
     }
 }
 
 void PatchWidget::onTargetVersionChanged(int index) {
     if (index < 0) return;
+    if (m_manifestsLoaded < m_manifestsToLoad) return; // still loading
+
     QString version = m_targetCombo->currentText();
-    m_scanResultsLabel->setText(
-        "<span style='color: #8a7a5a; font-style: italic;'>Scanning scrolls...</span>");
-    m_scanResultsLabel->setVisible(true);
+    if (!m_allManifests.contains(version)) return;
+
+    m_scanSummaryLabel->setText("Scanning files...");
+    m_scanSummaryLabel->setVisible(true);
+    m_scanTree->setVisible(false);
+    m_scanTree->clear();
     m_patchBtn->setVisible(false);
-    m_apiClient->fetchManifest(m_gameSlug, version);
+
+    runScan();
 }
 
-void PatchWidget::onManifestReady(const QString &gameSlug, const Manifest &manifest) {
-    if (gameSlug != m_gameSlug) return;
-
-    m_knownHashes.clear();
-    m_knownPaths.clear();
-    for (const auto &f : manifest.files) {
-        m_knownHashes.insert(f.xxhash3);
-        m_knownPaths.insert(f.path);
-    }
+void PatchWidget::runScan() {
+    QString version = m_targetCombo->currentText();
+    const Manifest &manifest = m_allManifests[version];
 
     HashCache cache(m_installPath + "/.downgrade-patcher-cache.json");
     m_scanResult = m_scanner.scan(m_installPath, manifest, m_knownHashes, m_knownPaths, cache);
@@ -232,20 +289,36 @@ void PatchWidget::onManifestReady(const QString &gameSlug, const Manifest &manif
     int unknown = m_scanResult.countByCategory(ScanCategory::Unknown);
     int missing = m_scanResult.countByCategory(ScanCategory::Missing);
     int extra = m_scanResult.countByCategory(ScanCategory::Extra);
+    int total = m_scanResult.entries.size();
 
-    QString text = "<table cellspacing='6'>";
-    text += QString("<tr><td style='color: #6a8a4a;'>%1</td><td style='color: #8a7a5a;'>files unchanged</td></tr>").arg(unchanged);
-    if (patchable > 0)
-        text += QString("<tr><td style='color: #c4972a;'>%1</td><td style='color: #b0a080;'>files will be restored</td></tr>").arg(patchable);
-    if (unknown > 0)
-        text += QString("<tr><td style='color: #a05a2a;'>%1</td><td style='color: #8a6a4a;'>files unrecognized (may fail)</td></tr>").arg(unknown);
-    if (missing > 0)
-        text += QString("<tr><td style='color: #7a8ab0;'>%1</td><td style='color: #8a7a5a;'>new files to inscribe</td></tr>").arg(missing);
-    if (extra > 0)
-        text += QString("<tr><td style='color: #8a4a3a;'>%1</td><td style='color: #8a7a5a;'>files to erase</td></tr>").arg(extra);
-    text += "</table>";
+    m_scanSummaryLabel->setText(
+        QString("Scan complete: %1 files checked").arg(total));
+    m_scanSummaryLabel->setVisible(true);
 
-    m_scanResultsLabel->setText(text);
+    // Build tree
+    m_scanTree->clear();
+
+    auto addCategory = [&](const QString &label, ScanCategory cat, const QString &color, int count) {
+        if (count == 0) return;
+        auto *parent = new QTreeWidgetItem(m_scanTree);
+        parent->setText(0, QString("%1 (%2)").arg(label).arg(count));
+        parent->setForeground(0, QColor(color));
+        parent->setExpanded(false);
+        for (const auto &entry : m_scanResult.entries) {
+            if (entry.category != cat) continue;
+            auto *child = new QTreeWidgetItem(parent);
+            child->setText(0, entry.path);
+            child->setForeground(0, QColor("#8a7a5a"));
+        }
+    };
+
+    addCategory("Unchanged", ScanCategory::Unchanged, "#6a8a4a", unchanged);
+    addCategory("Will be patched", ScanCategory::Patchable, "#c4972a", patchable);
+    addCategory("Unknown (may fail)", ScanCategory::Unknown, "#a05a2a", unknown);
+    addCategory("New files to download", ScanCategory::Missing, "#7a8ab0", missing);
+    addCategory("Will be removed", ScanCategory::Extra, "#8a4a3a", extra);
+
+    m_scanTree->setVisible(true);
     m_patchBtn->setVisible(patchable > 0 || missing > 0 || extra > 0);
 }
 
@@ -253,6 +326,8 @@ void PatchWidget::onStartPatching() {
     m_patchBtn->setVisible(false);
     m_backBtn->setEnabled(false);
     m_targetCombo->setEnabled(false);
+    m_scanTree->setVisible(false);
+    m_scanSummaryLabel->setVisible(false);
     m_overallProgress->setVisible(true);
     m_overallProgressLabel->setVisible(true);
     m_overallProgress->setValue(0);
@@ -269,18 +344,16 @@ void PatchWidget::onPatchProgress(const PatchProgress &progress) {
     m_overallProgress->setValue(progress.filesCompleted);
     m_fileProgress->setMaximum(progress.currentFileTotalChunks);
     m_fileProgress->setValue(progress.currentFileChunksCompleted);
-    m_fileProgressLabel->setText(
-        QString("<span style='color: #8a7a5a;'>%1</span>")
-            .arg(progress.currentFile));
+    m_fileProgressLabel->setText(progress.currentFile);
 }
 
 void PatchWidget::onFileCompleted(const QString &path) {
-    m_log->append(QString("<span style='color: #6a8a4a;'>Restored:</span> <span style='color: #b0a080;'>%1</span>").arg(path));
+    m_log->append(QString("<span style='color: #6a8a4a;'>Patched:</span> <span style='color: #b0a080;'>%1</span>").arg(path));
     m_log->verticalScrollBar()->setValue(m_log->verticalScrollBar()->maximum());
 }
 
 void PatchWidget::onFileFailed(const QString &path, const QString &error) {
-    m_log->append(QString("<span style='color: #a04a3a;'>Failed:</span> <span style='color: #8a6a4a;'>%1 &mdash; %2</span>").arg(path, error));
+    m_log->append(QString("<span style='color: #a04a3a;'>Failed:</span> <span style='color: #8a6a4a;'>%1 — %2</span>").arg(path, error));
     m_log->verticalScrollBar()->setValue(m_log->verticalScrollBar()->maximum());
 }
 
@@ -292,12 +365,12 @@ void PatchWidget::onPatchFinished(const PatchSummary &summary) {
     if (summary.failCount == 0) {
         m_log->append(QString(
             "<br><span style='color: #c4972a; font-size: 13px; font-weight: bold;'>"
-            "Restoration complete! %1 files restored.</span>")
+            "Done! %1 files patched successfully.</span>")
             .arg(summary.successCount));
     } else {
         m_log->append(QString(
             "<br><span style='color: #a05a2a; font-size: 13px;'>"
-            "Restoration finished: %1 succeeded, %2 failed.</span>")
+            "Done: %1 succeeded, %2 failed.</span>")
             .arg(summary.successCount).arg(summary.failCount));
     }
 }
