@@ -1,0 +1,14 @@
+{
+  "games": [
+    {
+      "slug": "skyrim-se",
+      "name": "Skyrim Special Edition",
+      "steam_app_id": 489830,
+      "depot_ids": [489833, 489834],
+      "exe_path": "SkyrimSE.exe",
+      "best_of_both_worlds": true,
+      "nexus_domain": "skyrimspecialedition",
+      "nexus_mod_id": 12345
+    }
+  ]
+}
