@@ -23,7 +23,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             clang lld \
-            qt6-base-dev qt6-base-dev-tools libqt6network6 \
+            qt6-base-dev qt6-base-dev-tools libqt6network6 libqt6concurrent6 \
             libzstd-dev libxxhash-dev
 
       - name: Install xmake
@@ -31,13 +31,9 @@ jobs:
           curl -fsSL https://xmake.io/shget.text | bash
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Configure (release + LTO + static)
+      - name: Configure
         working-directory: client
-        run: |
-          xmake f -m release \
-            --toolchain=clang \
-            --qt=/usr/lib/qt6 \
-            -y
+        run: xmake f -m release --qt=/usr/lib/qt6 -y
 
       - name: Build
         working-directory: client
@@ -72,19 +68,26 @@ jobs:
         with:
           xmake-version: latest
 
-      - name: Install Qt (static)
-        uses: jurplel/install-qt-action@v4
+      # Cache xmake packages (static Qt build takes ~20 min first time)
+      - name: Cache xmake packages
+        uses: actions/cache@v4
         with:
-          version: '6.8.*'
-          modules: 'qtnetworkauth'
-          cache: true
-          # TODO: static Qt builds are not available via install-qt-action
-          # For now, use dynamic and bundle with windeployqt
+          path: |
+            ~/AppData/Local/.xmake/packages
+            ~/AppData/Local/.xmake/repositories
+          key: xmake-windows-static-${{ hashFiles('client/xmake.lua') }}
+          restore-keys: |
+            xmake-windows-static-
 
-      - name: Configure (release + LTO)
-        working-directory: client
+      # Install build tools needed for Qt source build
+      - name: Install build tools
         run: |
-          xmake f -m release --toolchain=clang -y
+          choco install ninja cmake --no-progress -y
+          pip install jinja2
+
+      - name: Configure (static release + LTO)
+        working-directory: client
+        run: xmake f -m release -y -v
 
       - name: Build
         working-directory: client
@@ -103,27 +106,8 @@ jobs:
           New-Item -ItemType Directory -Force dist
           Copy-Item build\windows\x64\release\downgrade-patcher.exe dist\
           Copy-Item -Recurse resources dist\resources
-          # Bundle only required Qt DLLs (minimal set)
-          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" dist\downgrade-patcher.exe `
-            --no-translations --no-opengl-sw --no-system-d3d-compiler `
-            --no-system-dxc-compiler --no-compiler-runtime `
-            --exclude-plugins qgif,qico,qjpeg,qsvg,qtga,qtiff,qwbmp,qwebp `
-            --exclude-plugins qcertonlybackend,qopensslbackend `
-            --exclude-plugins qwindowsvistastyle
-
-      - name: Remove unnecessary bundled files
-        working-directory: client/dist
-        shell: pwsh
-        run: |
-          # Remove icon engines, image formats we don't use, network backends
-          Remove-Item -Recurse -Force iconengines -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force imageformats -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force networkinformation -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force tls -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force generic -ErrorAction SilentlyContinue
-          Remove-Item -Force D3Dcompiler_*.dll -ErrorAction SilentlyContinue
-          Remove-Item -Force opengl32sw.dll -ErrorAction SilentlyContinue
-          Remove-Item -Force vc_redist*.exe -ErrorAction SilentlyContinue
+          # Verify it's a standalone exe (no Qt DLLs needed)
+          Get-Item dist\downgrade-patcher.exe | Select-Object Name,Length
 
       - uses: actions/upload-artifact@v4
         with:

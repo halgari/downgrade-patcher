@@ -1,25 +1,31 @@
 set_xmakever("2.9.0")
 set_languages("c++20")
-set_toolchains("clang")
 
 add_rules("mode.debug", "mode.release")
 
--- Release optimizations: full LTO + O3
 if is_mode("release") then
     set_optimize("fastest")
     set_policy("build.optimization.lto", true)
 end
 
--- On Windows, use xmake package manager for zstd/xxhash
--- On Linux, use system-installed libraries
 if is_plat("windows") then
-    add_requires("zstd", "xxhash")
+    set_toolchains("clang")
+    set_runtimes("MT")
+
+    -- Fully static deps via xmake package manager
+    add_requires("zstd", {configs = {shared = false}})
+    add_requires("xxhash", {configs = {shared = false}})
+
+    -- Static Qt6 — xmake builds from source and caches
+    add_requires("qt6widgets", {configs = {shared = false}})
+    add_requires("qt6network", {configs = {shared = false}})
+    add_requires("qt6concurrent", {configs = {shared = false}})
+else
+    set_toolchains("clang")
 end
 
 target("downgrade-patcher")
     set_kind("binary")
-    add_rules("qt.widgetapp")
-    add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
     add_files("src/main.cpp")
     add_files("src/api/*.cpp")
     add_files("src/api/*.h")
@@ -29,16 +35,18 @@ target("downgrade-patcher")
     add_files("src/ui/*.h")
     add_includedirs("src")
     if is_plat("windows") then
+        add_packages("qt6widgets", "qt6network", "qt6concurrent")
         add_packages("zstd", "xxhash")
-        add_links("Qt6EntryPoint")
+        -- Windows subsystem + entry point
+        add_ldflags("/SUBSYSTEM:WINDOWS", {force = true})
     else
+        add_rules("qt.widgetapp")
+        add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
         add_syslinks("zstd", "xxhash")
     end
 
 target("tests")
     set_kind("binary")
-    add_rules("qt.console")
-    add_frameworks("QtCore", "QtTest", "QtNetwork", "QtConcurrent")
     add_files("tests/test_main.cpp")
     add_files("tests/test_api_client.h")
     add_files("tests/test_hash_cache.h")
@@ -51,8 +59,11 @@ target("tests")
     add_files("src/engine/*.h")
     add_includedirs("src")
     if is_plat("windows") then
+        add_packages("qt6widgets", "qt6network", "qt6concurrent")
         add_packages("zstd", "xxhash")
     else
+        add_rules("qt.console")
+        add_frameworks("QtCore", "QtTest", "QtNetwork", "QtConcurrent")
         add_syslinks("zstd", "xxhash")
     end
     set_default(false)
