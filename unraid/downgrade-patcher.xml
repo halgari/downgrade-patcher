@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>downgrade-patcher</Name>
+  <Repository>downgrade-patcher</Repository>
+  <Registry/>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Overview>Game downgrade patch server. Serves chunked zstd patches for Skyrim SE, Fallout 4, Starfield, and other Bethesda games.</Overview>
+  <Category>GameServers:</Category>
+  <WebUI>http://[IP]:[PORT:8000]/docs</WebUI>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText/>
+  <DonateLink/>
+  <DonateImg/>
+  <Config Name="Web Port" Target="8000" Default="8000" Mode="tcp" Description="API port" Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Game Store" Target="/data/store" Default="/mnt/user/game_versions" Mode="ro" Description="Path to the game version store (read-only)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/game_versions</Config>
+  <Config Name="Patch Cache" Target="/data/cache" Default="/mnt/user/appdata/downgrade-patcher/cache" Mode="rw" Description="Path to store generated patch cache" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/downgrade-patcher/cache</Config>
+</Container>

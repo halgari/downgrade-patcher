@@ -1,0 +1,17 @@
+services:
+  patch-server:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount your game version store (read-only — server never writes here)
+      - ${STORE_PATH:-./store}:/data/store:ro
+      # Patch cache — server writes generated patches here
+      - ${CACHE_PATH:-./cache}:/data/cache
+      # Game config — override if needed
+      - ./config:/app/config:ro
+    environment:
+      - DOWNGRADE_STORE_ROOT=/data/store
+      - DOWNGRADE_CACHE_ROOT=/data/cache
+      - DOWNGRADE_CONFIG_DIR=/app/config
+    restart: unless-stopped
