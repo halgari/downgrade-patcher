@@ -17,17 +17,121 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
     , m_patchWidget(new PatchWidget(apiClient, this))
 {
     setWindowTitle("Downgrade Patcher");
-    setMinimumSize(500, 400);
+    setMinimumSize(600, 500);
     setCentralWidget(m_stack);
 
-    // Dark theme
-    setStyleSheet(
-        "QMainWindow { background: #1a1a2e; }"
-        "QWidget { color: #dddddd; }"
-        "QPushButton { background: #3a3a5e; border: 1px solid #555; border-radius: 4px; padding: 6px 12px; color: #eee; }"
-        "QPushButton:hover { background: #4a4a6e; }"
-        "QComboBox { background: #2a2a3e; border: 1px solid #555; padding: 4px 8px; color: #eee; }"
-    );
+    // Fantasy parchment theme
+    setStyleSheet(R"(
+        QMainWindow {
+            background: #1c1410;
+        }
+        QWidget {
+            color: #d4c4a0;
+            font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+        }
+        QPushButton {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #5c3d2e, stop:1 #3d2518);
+            border: 2px solid #8b6914;
+            border-radius: 3px;
+            padding: 8px 16px;
+            color: #e8d5a3;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        QPushButton:hover {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #7a5240, stop:1 #5c3d2e);
+            border-color: #c4972a;
+        }
+        QPushButton:pressed {
+            background: #2a1a10;
+        }
+        QPushButton:disabled {
+            background: #2a1a10;
+            border-color: #4a3a2a;
+            color: #6a5a4a;
+        }
+        QComboBox {
+            background: #2a1c14;
+            border: 2px solid #6b4c1e;
+            border-radius: 3px;
+            padding: 6px 10px;
+            color: #e8d5a3;
+            font-size: 13px;
+            min-height: 20px;
+        }
+        QComboBox:hover {
+            border-color: #8b6914;
+        }
+        QComboBox::drop-down {
+            border-left: 1px solid #6b4c1e;
+            width: 24px;
+        }
+        QComboBox QAbstractItemView {
+            background: #2a1c14;
+            border: 2px solid #6b4c1e;
+            color: #e8d5a3;
+            selection-background-color: #5c3d2e;
+        }
+        QProgressBar {
+            background: #1a1008;
+            border: 2px solid #6b4c1e;
+            border-radius: 4px;
+            text-align: center;
+            color: #e8d5a3;
+            font-size: 11px;
+            min-height: 18px;
+        }
+        QProgressBar::chunk {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #8b6914, stop:0.5 #c4972a, stop:1 #8b6914);
+            border-radius: 2px;
+        }
+        QTextEdit {
+            background: #140e08;
+            border: 2px solid #4a3520;
+            border-radius: 4px;
+            color: #b0a080;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 11px;
+            padding: 4px;
+        }
+        QCheckBox {
+            color: #d4c4a0;
+            spacing: 8px;
+        }
+        QCheckBox::indicator {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #6b4c1e;
+            border-radius: 2px;
+            background: #2a1c14;
+        }
+        QCheckBox::indicator:checked {
+            background: #8b6914;
+        }
+        QLineEdit {
+            background: #2a1c14;
+            border: 2px solid #6b4c1e;
+            border-radius: 3px;
+            padding: 6px;
+            color: #e8d5a3;
+        }
+        QScrollBar:vertical {
+            background: #1a1008;
+            width: 10px;
+            border: none;
+        }
+        QScrollBar::handle:vertical {
+            background: #5c3d2e;
+            border-radius: 4px;
+            min-height: 20px;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0;
+        }
+    )");
 
     m_stack->addWidget(m_gameList);    // index 0
     m_stack->addWidget(m_patchWidget); // index 1

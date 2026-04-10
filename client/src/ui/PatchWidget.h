@@ -53,6 +53,7 @@ private:
     QComboBox *m_targetCombo;
     QLabel *m_scanResultsLabel;
     QPushButton *m_patchBtn;
+    QLabel *m_overallProgressLabel;
     QProgressBar *m_overallProgress;
     QProgressBar *m_fileProgress;
     QLabel *m_fileProgressLabel;
