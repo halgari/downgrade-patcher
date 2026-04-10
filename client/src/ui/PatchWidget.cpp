@@ -135,14 +135,30 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
 
     layout->addStretch();
 
-    // Donate footer
-    auto *donateLabel = new QLabel(
-        "<a href='https://www.patreon.com/u11907933' style='color: #8b6914; text-decoration: none;'>"
-        "Support this project on Patreon</a>", this);
-    donateLabel->setOpenExternalLinks(true);
-    donateLabel->setAlignment(Qt::AlignCenter);
-    donateLabel->setStyleSheet("font-size: 11px;");
-    layout->addWidget(donateLabel);
+    // Donate banner
+    auto *donateWidget = new QWidget(this);
+    auto *donateLayout = new QVBoxLayout(donateWidget);
+    donateLayout->setContentsMargins(12, 10, 12, 10);
+    donateLayout->setSpacing(4);
+    donateWidget->setStyleSheet(
+        "background: #221a10; border: 1px solid #4a3520; border-radius: 4px;"
+    );
+    auto *donateMsg = new QLabel(
+        "This tool is free and open source. If you find it useful, "
+        "please consider supporting development.", donateWidget);
+    donateMsg->setWordWrap(true);
+    donateMsg->setAlignment(Qt::AlignCenter);
+    donateMsg->setStyleSheet("color: #8a7a5a; font-size: 12px; border: none; background: transparent;");
+    donateLayout->addWidget(donateMsg);
+    auto *donateLink = new QLabel(
+        "<a href='https://www.patreon.com/u11907933' "
+        "style='color: #c4972a; text-decoration: none; font-weight: bold;'>"
+        "Support us on Patreon</a>", donateWidget);
+    donateLink->setOpenExternalLinks(true);
+    donateLink->setAlignment(Qt::AlignCenter);
+    donateLink->setStyleSheet("font-size: 13px; border: none; background: transparent;");
+    donateLayout->addWidget(donateLink);
+    layout->addWidget(donateWidget);
 
     // Connections
     connect(m_backBtn, &QPushButton::clicked, this, &PatchWidget::backRequested);
