@@ -3,6 +3,8 @@
 #include <QScrollBar>
 #include <QFrame>
 #include <QHeaderView>
+#include <QtConcurrent/QtConcurrentRun>
+#include <QFutureWatcher>
 
 PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     : QWidget(parent)
@@ -208,24 +210,38 @@ void PatchWidget::onManifestIndexReady(const QString &gameSlug, const ManifestIn
 
     m_manifestIndex = index;
 
-    // Detect installed version
+    // Detect installed version in a background thread (hashing can be slow)
+    QString exePath;
     for (const auto &game : m_games) {
-        if (game.slug != gameSlug) continue;
-        QString exePath = m_installPath + "/" + game.exePath;
-        QString exeHash = GameScanner::hashFile(exePath);
-        if (index.versions.contains(exeHash)) {
+        if (game.slug == gameSlug) {
+            exePath = m_installPath + "/" + game.exePath;
+            break;
+        }
+    }
+
+    m_versionLabel->setText("Detecting installed version...");
+
+    auto future = QtConcurrent::run([exePath]() {
+        return GameScanner::hashFile(exePath);
+    });
+    auto *watcher = new QFutureWatcher<QString>(this);
+    connect(watcher, &QFutureWatcher<QString>::finished, this, [this, watcher, gameSlug, index]() {
+        QString exeHash = watcher->result();
+        watcher->deleteLater();
+
+        if (m_manifestIndex.versions.contains(exeHash)) {
             m_versionLabel->setText(
                 QString("Current version: <b style='color: #c4972a;'>%1</b>")
-                    .arg(index.versions[exeHash]));
+                    .arg(m_manifestIndex.versions[exeHash]));
         } else {
             m_versionLabel->setText(
                 "Current version: <b style='color: #a05a2a;'>Unknown</b> "
                 "<span style='color: #6a5a3a; font-size: 11px;'>(modified or unrecognized)</span>");
         }
-        break;
-    }
+    });
+    watcher->setFuture(future);
 
-    // Fetch ALL manifests to build complete known hash set
+    // Fetch ALL manifests in parallel (don't wait for hash to finish)
     QSet<QString> versions;
     for (auto it = index.versions.begin(); it != index.versions.end(); ++it) {
         versions.insert(it.value());
@@ -233,11 +249,7 @@ void PatchWidget::onManifestIndexReady(const QString &gameSlug, const ManifestIn
 
     m_manifestsToLoad = versions.size();
     m_manifestsLoaded = 0;
-    m_versionLabel->setText(m_versionLabel->text() +
-        QString(" <span style='color: #6a5a3a; font-size: 11px;'>(loading %1 manifests...)</span>")
-            .arg(m_manifestsToLoad));
 
-    // Connect the manifest-ready signal for bulk loading
     disconnect(m_apiClient, &ApiClient::manifestReady, this, nullptr);
     connect(m_apiClient, &ApiClient::manifestReady, this, &PatchWidget::onAllManifestReady);
 

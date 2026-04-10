@@ -72,12 +72,14 @@ jobs:
         with:
           xmake-version: latest
 
-      - name: Install Qt
+      - name: Install Qt (static)
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.*'
           modules: 'qtnetworkauth'
           cache: true
+          # TODO: static Qt builds are not available via install-qt-action
+          # For now, use dynamic and bundle with windeployqt
 
       - name: Configure (release + LTO)
         working-directory: client
@@ -101,8 +103,27 @@ jobs:
           New-Item -ItemType Directory -Force dist
           Copy-Item build\windows\x64\release\downgrade-patcher.exe dist\
           Copy-Item -Recurse resources dist\resources
-          # Bundle Qt DLLs
-          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" dist\downgrade-patcher.exe --no-translations --no-opengl-sw
+          # Bundle only required Qt DLLs (minimal set)
+          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" dist\downgrade-patcher.exe `
+            --no-translations --no-opengl-sw --no-system-d3d-compiler `
+            --no-system-dxc-compiler --no-compiler-runtime `
+            --exclude-plugins qgif,qico,qjpeg,qsvg,qtga,qtiff,qwbmp,qwebp `
+            --exclude-plugins qcertonlybackend,qopensslbackend `
+            --exclude-plugins qwindowsvistastyle
+
+      - name: Remove unnecessary bundled files
+        working-directory: client/dist
+        shell: pwsh
+        run: |
+          # Remove icon engines, image formats we don't use, network backends
+          Remove-Item -Recurse -Force iconengines -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force imageformats -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force networkinformation -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force tls -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force generic -ErrorAction SilentlyContinue
+          Remove-Item -Force D3Dcompiler_*.dll -ErrorAction SilentlyContinue
+          Remove-Item -Force opengl32sw.dll -ErrorAction SilentlyContinue
+          Remove-Item -Force vc_redist*.exe -ErrorAction SilentlyContinue
 
       - uses: actions/upload-artifact@v4
         with:
