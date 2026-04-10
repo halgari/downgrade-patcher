@@ -133,7 +133,6 @@ def test_warm_cache_generates_patches(tmp_path: Path, sample_games_json: Path):
     store_root = tmp_path / "store"
     runner = CliRunner()
 
-    # Ingest two versions with different exe content
     for ver, content in [("1.5.97", b"exe-old-content"), ("1.6.1170", b"exe-new-content")]:
         depot = tmp_path / f"depot_{ver}"
         depot.mkdir()
@@ -147,8 +146,14 @@ def test_warm_cache_generates_patches(tmp_path: Path, sample_games_json: Path):
 
     cache_root = tmp_path / "cache"
 
-    with mock_patch("downgrade_patcher.cli.subprocess.run") as mock_run:
+    with mock_patch("downgrade_common.chunking.subprocess.run") as mock_run:
         mock_run.return_value.returncode = 0
+        def side_effect(cmd, **kwargs):
+            out_idx = cmd.index("-o") + 1
+            Path(cmd[out_idx]).write_bytes(b"fake-patch")
+            return mock_run.return_value
+        mock_run.side_effect = side_effect
+
         result = runner.invoke(main, [
             "--store-root", str(store_root),
             "--games-config", str(sample_games_json),
@@ -160,7 +165,6 @@ def test_warm_cache_generates_patches(tmp_path: Path, sample_games_json: Path):
         ])
 
     assert result.exit_code == 0, result.output
-    # Should have called zstd for the exe (the only file that differs)
     assert mock_run.call_count >= 1
     cmd_str = " ".join(mock_run.call_args_list[0][0][0])
     assert "--patch-from" in cmd_str

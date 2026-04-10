@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from downgrade_patcher.hashing import hash_file
-from downgrade_patcher.config import GameConfig
+from downgrade_common.hashing import hash_file
+from downgrade_common.config import GameConfig
 
 
 def generate_manifest(game_slug: str, version: str, version_dir: Path) -> dict:

@@ -5,7 +5,7 @@ from downgrade_patcher.manifest import (
     build_manifest_index,
     build_hash_index,
 )
-from downgrade_patcher.config import GameConfig
+from downgrade_common.config import GameConfig
 
 
 SKYRIM_CONFIG = GameConfig(

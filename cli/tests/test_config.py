@@ -1,4 +1,4 @@
-from downgrade_patcher.config import GameConfig, load_games, find_game
+from downgrade_common.config import GameConfig, load_games, find_game
 
 
 def test_load_games_returns_all_games(sample_games_json):

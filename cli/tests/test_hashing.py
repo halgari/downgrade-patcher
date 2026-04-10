@@ -1,5 +1,5 @@
 from pathlib import Path
-from downgrade_patcher.hashing import hash_file
+from downgrade_common.hashing import hash_file
 
 
 def test_hash_file_returns_hex_string(tmp_path: Path):
