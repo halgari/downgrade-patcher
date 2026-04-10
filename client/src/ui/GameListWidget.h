@@ -14,6 +14,7 @@ public:
 
     void setGames(const QList<GameConfig> &games, const QList<DetectedGame> &detected);
     void setUpdateBanner(const QString &version, const QString &url);
+    void showStatus(const QString &message);
 
 signals:
     void gameSelected(const QString &gameSlug, const QString &installPath);

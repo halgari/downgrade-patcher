@@ -20,6 +20,7 @@ private slots:
     void onGamesReady(const QList<GameConfig> &games);
     void onGameSelected(const QString &gameSlug, const QString &installPath);
     void onBackToGameList();
+    void onConnectionError(const QString &message);
 
 private:
     ApiClient *m_apiClient;

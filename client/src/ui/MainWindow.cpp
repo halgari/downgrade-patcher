@@ -33,10 +33,12 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
     m_stack->addWidget(m_patchWidget); // index 1
 
     connect(m_apiClient, &ApiClient::gamesReady, this, &MainWindow::onGamesReady);
+    connect(m_apiClient, &ApiClient::errorOccurred, this, &MainWindow::onConnectionError);
     connect(m_gameList, &GameListWidget::gameSelected, this, &MainWindow::onGameSelected);
     connect(m_patchWidget, &PatchWidget::backRequested, this, &MainWindow::onBackToGameList);
 
-    // Fetch game list on startup
+    // Show loading state, then fetch game list
+    m_gameList->showStatus("Connecting to server...");
     m_apiClient->fetchGames();
 }
 
@@ -113,4 +115,8 @@ void MainWindow::onGameSelected(const QString &gameSlug, const QString &installP
 
 void MainWindow::onBackToGameList() {
     m_stack->setCurrentIndex(0);
+}
+
+void MainWindow::onConnectionError(const QString &message) {
+    m_gameList->showStatus("Could not connect to server.\n\n" + message + "\n\nCheck that the patch server is running.");
 }

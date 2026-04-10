@@ -23,6 +23,22 @@ void GameListWidget::setUpdateBanner(const QString &version, const QString &url)
     m_updateBanner->setVisible(true);
 }
 
+void GameListWidget::showStatus(const QString &message) {
+    // Clear everything after the banner
+    while (m_layout->count() > 1) {
+        auto item = m_layout->takeAt(1);
+        delete item->widget();
+        delete item;
+    }
+
+    auto *label = new QLabel(message, this);
+    label->setAlignment(Qt::AlignCenter);
+    label->setStyleSheet("color: #aaaaaa; font-size: 13px; padding: 40px;");
+    label->setWordWrap(true);
+    m_layout->addWidget(label);
+    m_layout->addStretch();
+}
+
 void GameListWidget::setGames(const QList<GameConfig> &games, const QList<DetectedGame> &detected) {
     // Clear existing game entries (keep banner)
     while (m_layout->count() > 1) {
