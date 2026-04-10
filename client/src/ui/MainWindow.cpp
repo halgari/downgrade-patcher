@@ -5,6 +5,7 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
     , m_apiClient(apiClient)
     , m_stack(new QStackedWidget(this))
     , m_gameList(new GameListWidget(this))
+    , m_patchWidget(new PatchWidget(apiClient, this))
 {
     setWindowTitle("Downgrade Patcher");
     setMinimumSize(500, 400);
@@ -19,10 +20,12 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
         "QComboBox { background: #2a2a3e; border: 1px solid #555; padding: 4px 8px; color: #eee; }"
     );
 
-    m_stack->addWidget(m_gameList); // index 0
+    m_stack->addWidget(m_gameList);    // index 0
+    m_stack->addWidget(m_patchWidget); // index 1
 
     connect(m_apiClient, &ApiClient::gamesReady, this, &MainWindow::onGamesReady);
     connect(m_gameList, &GameListWidget::gameSelected, this, &MainWindow::onGameSelected);
+    connect(m_patchWidget, &PatchWidget::backRequested, this, &MainWindow::onBackToGameList);
 
     // Fetch game list on startup
     m_apiClient->fetchGames();
@@ -35,7 +38,10 @@ void MainWindow::onGamesReady(const QList<GameConfig> &games) {
 }
 
 void MainWindow::onGameSelected(const QString &gameSlug, const QString &installPath) {
-    // PatchWidget will be added in Task 9
-    Q_UNUSED(gameSlug);
-    Q_UNUSED(installPath);
+    m_patchWidget->setGame(gameSlug, installPath, m_games);
+    m_stack->setCurrentIndex(1);
+}
+
+void MainWindow::onBackToGameList() {
+    m_stack->setCurrentIndex(0);
 }
