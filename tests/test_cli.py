@@ -86,3 +86,43 @@ def test_ingest_second_version_updates_indexes(tmp_path: Path, sample_games_json
         (store_root / "skyrim-se" / "hash-index.json").read_text()
     )
     assert len(hash_index) == 2  # two different exe hashes
+
+
+def test_list_versions(tmp_path: Path, sample_games_json: Path):
+    store_root = tmp_path / "store"
+    runner = CliRunner()
+
+    for ver, content in [("1.5.97", b"v1"), ("1.6.1170", b"v2")]:
+        depot = tmp_path / f"depot_{ver}"
+        depot.mkdir()
+        (depot / "SkyrimSE.exe").write_bytes(content)
+        runner.invoke(main, [
+            "--store-root", str(store_root),
+            "--games-config", str(sample_games_json),
+            "ingest", "--game", "skyrim-se", "--version", ver,
+            "--depot-path", str(depot),
+        ])
+
+    result = runner.invoke(main, [
+        "--store-root", str(store_root),
+        "--games-config", str(sample_games_json),
+        "list-versions", "--game", "skyrim-se",
+    ])
+
+    assert result.exit_code == 0
+    assert "1.5.97" in result.output
+    assert "1.6.1170" in result.output
+
+
+def test_list_versions_empty(tmp_path: Path, sample_games_json: Path):
+    store_root = tmp_path / "store"
+    runner = CliRunner()
+
+    result = runner.invoke(main, [
+        "--store-root", str(store_root),
+        "--games-config", str(sample_games_json),
+        "list-versions", "--game", "skyrim-se",
+    ])
+
+    assert result.exit_code == 0
+    assert "No versions" in result.output

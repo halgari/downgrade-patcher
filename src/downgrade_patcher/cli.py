@@ -71,6 +71,20 @@ def ingest(ctx: click.Context, game: str, game_version: str, depot_path: Path):
     click.echo(f"Hash index updated: {hash_index_path}")
 
 
+@main.command("list-versions")
+@click.option("--game", required=True, help="Game slug")
+@click.pass_context
+def list_versions(ctx: click.Context, game: str):
+    store: VersionStore = ctx.obj["store"]
+    versions = store.list_versions(game)
+    if not versions:
+        click.echo(f"No versions found for {game}")
+        return
+    click.echo(f"Versions for {game}:")
+    for v in versions:
+        click.echo(f"  {v}")
+
+
 def _load_all_manifests(store: VersionStore, game_slug: str) -> dict[str, dict]:
     manifests = {}
     manifests_dir = store.manifest_path(game_slug, "dummy").parent
