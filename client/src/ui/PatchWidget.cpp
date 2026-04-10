@@ -12,8 +12,8 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     , m_manifestsLoaded(0)
 {
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(24, 16, 24, 16);
-    layout->setSpacing(10);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(8);
 
     // Header
     auto *header = new QHBoxLayout();
@@ -36,18 +36,19 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
 
     // Divider
     auto *divider = new QFrame(this);
-    divider->setFrameShape(QFrame::HLine);
+    divider->setFixedHeight(2);
     divider->setStyleSheet(
         "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
         "stop:0 transparent, stop:0.2 #6b4c1e, stop:0.5 #c4972a, "
-        "stop:0.8 #6b4c1e, stop:1 transparent); "
-        "border: none; max-height: 2px; margin: 4px 40px;"
+        "stop:0.8 #6b4c1e, stop:1 transparent); border: none;"
     );
     layout->addWidget(divider);
 
+    layout->addSpacing(4);
+
     // Version info
     m_versionLabel = new QLabel(this);
-    m_versionLabel->setStyleSheet("color: #8a7a5a; font-size: 13px; padding: 8px 0 4px 0;");
+    m_versionLabel->setStyleSheet("color: #8a7a5a; font-size: 13px;");
     layout->addWidget(m_versionLabel);
 
     // Target selector
@@ -65,9 +66,7 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
 
     // Scan summary label
     m_scanSummaryLabel = new QLabel(this);
-    m_scanSummaryLabel->setStyleSheet(
-        "color: #8a7a5a; font-size: 12px; padding: 6px 0 2px 0;"
-    );
+    m_scanSummaryLabel->setStyleSheet("color: #8a7a5a; font-size: 12px;");
     m_scanSummaryLabel->setVisible(false);
     layout->addWidget(m_scanSummaryLabel);
 

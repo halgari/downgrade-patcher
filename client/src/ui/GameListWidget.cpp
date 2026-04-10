@@ -12,13 +12,13 @@ GameListWidget::GameListWidget(QWidget *parent)
     , m_layout(new QVBoxLayout(this))
     , m_updateBanner(new QLabel(this))
 {
-    m_layout->setContentsMargins(24, 16, 24, 16);
-    m_layout->setSpacing(12);
+    m_layout->setContentsMargins(16, 16, 16, 16);
+    m_layout->setSpacing(8);
 
     m_updateBanner->setVisible(false);
     m_updateBanner->setStyleSheet(
-        "background: #2a3a1a; border: 2px solid #4a6a2a; border-radius: 4px; "
-        "color: #c4d4a0; padding: 10px; font-size: 12px;"
+        "background: #2a3a1a; border: 1px solid #4a6a2a; border-radius: 4px; "
+        "color: #c4d4a0; padding: 8px 12px; font-size: 12px;"
     );
     m_layout->addWidget(m_updateBanner);
 }
@@ -41,8 +41,9 @@ void GameListWidget::showStatus(const QString &message) {
 
     auto *label = new QLabel(message, this);
     label->setAlignment(Qt::AlignCenter);
-    label->setStyleSheet("color: #8a7a5a; font-size: 14px; padding: 60px 40px; font-style: italic;");
+    label->setStyleSheet("color: #8a7a5a; font-size: 14px; font-style: italic;");
     label->setWordWrap(true);
+    label->setContentsMargins(16, 48, 16, 48);
     m_layout->addWidget(label);
     m_layout->addStretch();
 }
@@ -54,62 +55,53 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
         delete item;
     }
 
-    // Title banner
-    auto *titleWidget = new QWidget(this);
-    auto *titleLayout = new QVBoxLayout(titleWidget);
-    titleLayout->setContentsMargins(0, 8, 0, 8);
-
-    auto *titleLabel = new QLabel("Downgrade Patcher", titleWidget);
+    // Title
+    auto *titleLabel = new QLabel("Downgrade Patcher", this);
     titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setStyleSheet(
-        "font-size: 28px; font-weight: bold; color: #c4972a; "
-        "letter-spacing: 3px; padding: 0; margin: 0;"
-    );
-    titleLayout->addWidget(titleLabel);
+    titleLabel->setStyleSheet("font-size: 26px; font-weight: bold; color: #c4972a; letter-spacing: 2px;");
+    m_layout->addWidget(titleLabel);
 
-    auto *subtitleLabel = new QLabel("Select a game to patch", titleWidget);
+    auto *subtitleLabel = new QLabel("Select a game to patch", this);
     subtitleLabel->setAlignment(Qt::AlignCenter);
-    subtitleLabel->setStyleSheet(
-        "font-size: 12px; color: #8a7a5a; font-style: italic; "
-        "padding: 0; margin: 0;"
-    );
-    titleLayout->addWidget(subtitleLabel);
+    subtitleLabel->setStyleSheet("font-size: 12px; color: #8a7a5a; font-style: italic;");
+    m_layout->addWidget(subtitleLabel);
 
-    // Decorative divider
-    auto *divider = new QFrame(titleWidget);
-    divider->setFrameShape(QFrame::HLine);
+    // Divider
+    auto *divider = new QFrame(this);
+    divider->setFixedHeight(2);
     divider->setStyleSheet(
         "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
         "stop:0 transparent, stop:0.2 #6b4c1e, stop:0.5 #c4972a, "
-        "stop:0.8 #6b4c1e, stop:1 transparent); "
-        "border: none; max-height: 2px; margin: 8px 40px;"
+        "stop:0.8 #6b4c1e, stop:1 transparent); border: none;"
     );
-    titleLayout->addWidget(divider);
+    divider->setContentsMargins(32, 0, 32, 0);
+    m_layout->addWidget(divider);
 
-    m_layout->addWidget(titleWidget);
+    m_layout->addSpacing(4);
 
-    // Build detection lookup
+    // Game cards
     QMap<QString, QString> detectedMap;
     for (const auto &d : detected) {
         detectedMap[d.gameSlug] = d.installPath;
     }
 
     for (const auto &game : games) {
-        auto *card = new QWidget(this);
-        auto *cardLayout = new QHBoxLayout(card);
-        cardLayout->setContentsMargins(16, 14, 16, 14);
-        auto *info = new QVBoxLayout();
-        info->setSpacing(4);
-
         bool isDetected = detectedMap.contains(game.slug);
         QString installPath = detectedMap.value(game.slug);
+
+        auto *card = new QWidget(this);
+        auto *cardLayout = new QHBoxLayout(card);
+        cardLayout->setContentsMargins(12, 10, 12, 10);
+        cardLayout->setSpacing(12);
+
+        auto *info = new QVBoxLayout();
+        info->setSpacing(2);
+        info->setContentsMargins(0, 0, 0, 0);
 
         auto *nameLabel = new QLabel(game.name, card);
 
         if (isDetected) {
-            nameLabel->setStyleSheet(
-                "font-weight: bold; font-size: 16px; color: #e8d5a3;"
-            );
+            nameLabel->setStyleSheet("font-weight: bold; font-size: 15px; color: #e8d5a3;");
             info->addWidget(nameLabel);
 
             auto *pathLabel = new QLabel(installPath, card);
@@ -119,12 +111,10 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
             card->setStyleSheet(
                 "background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
                 "stop:0 #2e2018, stop:1 #241810); "
-                "border: 2px solid #5c3d2e; border-radius: 6px;"
+                "border: 1px solid #5c3d2e; border-radius: 4px;"
             );
         } else {
-            nameLabel->setStyleSheet(
-                "font-weight: bold; font-size: 16px; color: #5a4a3a;"
-            );
+            nameLabel->setStyleSheet("font-weight: bold; font-size: 15px; color: #5a4a3a;");
             info->addWidget(nameLabel);
 
             auto *statusLabel = new QLabel("Not installed", card);
@@ -132,15 +122,14 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
             info->addWidget(statusLabel);
 
             card->setStyleSheet(
-                "background: #1a1208; "
-                "border: 1px solid #3a2a1a; border-radius: 6px;"
+                "background: #1a1208; border: 1px solid #3a2a1a; border-radius: 4px;"
             );
         }
 
         cardLayout->addLayout(info, 1);
 
         if (isDetected) {
-            auto *btn = new QPushButton("Enter \u2192", card);
+            auto *btn = new QPushButton("Select", card);
             connect(btn, &QPushButton::clicked, this, [this, slug = game.slug, path = installPath]() {
                 emit gameSelected(slug, path);
             });
@@ -150,22 +139,22 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
         m_layout->addWidget(card);
     }
 
+    m_layout->addStretch();
+
     // Footer
     auto *footerDivider = new QFrame(this);
-    footerDivider->setFrameShape(QFrame::HLine);
-    footerDivider->setStyleSheet(
-        "background: #3a2a1a; border: none; max-height: 1px; margin: 4px 0;"
-    );
+    footerDivider->setFixedHeight(1);
+    footerDivider->setStyleSheet("background: #3a2a1a; border: none;");
     m_layout->addWidget(footerDivider);
 
     auto *footer = new QWidget(this);
     auto *footerLayout = new QHBoxLayout(footer);
     footerLayout->setContentsMargins(0, 4, 0, 0);
+    footerLayout->setSpacing(8);
 
     auto *settingsBtn = new QPushButton("Settings", footer);
     settingsBtn->setStyleSheet(
-        "border: none; background: transparent; color: #6a5a3a; "
-        "font-size: 11px; padding: 4px 8px;"
+        "border: none; background: transparent; color: #6a5a3a; font-size: 11px; padding: 2px 4px;"
     );
     connect(settingsBtn, &QPushButton::clicked, this, [this]() {
         SettingsDialog dialog(this);
@@ -179,5 +168,4 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
     footerLayout->addWidget(versionLabel);
 
     m_layout->addWidget(footer);
-    m_layout->addStretch();
 }
