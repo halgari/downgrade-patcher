@@ -24,6 +24,11 @@ def create_app(
         yield
 
     app = FastAPI(lifespan=lifespan)
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok"}
+
     app.include_router(games_router)
     app.include_router(manifests_router)
     app.include_router(patches_router)
