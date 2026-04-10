@@ -123,7 +123,7 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
     m_fileProgress = new QProgressBar(this);
     m_fileProgress->setVisible(false);
     m_fileProgress->setTextVisible(true);
-    m_fileProgress->setFormat("chunk %v / %m");
+    m_fileProgress->setFormat("%v / %m");
     layout->addWidget(m_fileProgress);
 
     // Log
@@ -288,34 +288,35 @@ void PatchWidget::runScan() {
     int unknown = m_scanResult.countByCategory(ScanCategory::Unknown);
     int missing = m_scanResult.countByCategory(ScanCategory::Missing);
     int extra = m_scanResult.countByCategory(ScanCategory::Extra);
+    int willPatch = patchable + missing;
     int total = m_scanResult.entries.size();
 
     m_scanSummaryLabel->setText(
         QString("Scan complete: %1 files checked").arg(total));
     m_scanSummaryLabel->setVisible(true);
 
-    // Build tree
+    // Build tree — group patchable + missing together as "Will be patched"
     m_scanTree->clear();
 
-    auto addCategory = [&](const QString &label, ScanCategory cat, const QString &color, int count) {
+    auto addCategory = [&](const QString &label, const QList<ScanCategory> &cats,
+                           const QString &color, int count) {
         if (count == 0) return;
         auto *parent = new QTreeWidgetItem(m_scanTree);
         parent->setText(0, QString("%1 (%2)").arg(label).arg(count));
         parent->setForeground(0, QColor(color));
         parent->setExpanded(false);
         for (const auto &entry : m_scanResult.entries) {
-            if (entry.category != cat) continue;
+            if (!cats.contains(entry.category)) continue;
             auto *child = new QTreeWidgetItem(parent);
             child->setText(0, entry.path);
             child->setForeground(0, QColor("#8a7a5a"));
         }
     };
 
-    addCategory("Unchanged", ScanCategory::Unchanged, "#6a8a4a", unchanged);
-    addCategory("Will be patched", ScanCategory::Patchable, "#c4972a", patchable);
-    addCategory("Unknown (may fail)", ScanCategory::Unknown, "#a05a2a", unknown);
-    addCategory("New files to download", ScanCategory::Missing, "#7a8ab0", missing);
-    addCategory("Will be removed", ScanCategory::Extra, "#8a4a3a", extra);
+    addCategory("Unchanged", {ScanCategory::Unchanged}, "#6a8a4a", unchanged);
+    addCategory("Will be patched", {ScanCategory::Patchable, ScanCategory::Missing}, "#c4972a", willPatch);
+    addCategory("Unknown (may fail)", {ScanCategory::Unknown}, "#a05a2a", unknown);
+    addCategory("Will be removed", {ScanCategory::Extra}, "#8a4a3a", extra);
 
     m_scanTree->setVisible(true);
     m_patchBtn->setVisible(patchable > 0 || missing > 0 || extra > 0);

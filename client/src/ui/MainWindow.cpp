@@ -66,8 +66,20 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
             border-color: #8b6914;
         }
         QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: center right;
             border-left: 1px solid #6b4c1e;
             width: 24px;
+        }
+        QComboBox::down-arrow {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #c4972a;
+        }
+        QComboBox::down-arrow:hover {
+            border-top-color: #e8b84a;
         }
         QComboBox QAbstractItemView {
             background: #2a1c14;
