@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("Downgrade Patcher");
     app.setApplicationVersion("0.1.0");
 
-    QUrl serverUrl("http://localhost:8000"); // TODO: make configurable
+    QUrl serverUrl("https://downgradepatcher.wabbajack.org");
     ApiClient apiClient(serverUrl);
 
     MainWindow window(&apiClient);
