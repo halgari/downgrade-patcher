@@ -4,6 +4,7 @@ from pathlib import Path
 import click
 
 from downgrade_patcher.config import load_games, find_game
+from downgrade_patcher.depot import download_depot
 from downgrade_patcher.manifest import (
     generate_manifest,
     build_manifest_index,
@@ -83,6 +84,39 @@ def list_versions(ctx: click.Context, game: str):
     click.echo(f"Versions for {game}:")
     for v in versions:
         click.echo(f"  {v}")
+
+
+@main.command()
+@click.option("--game", required=True, help="Game slug")
+@click.option("--depot", "depot_id", required=True, type=int, help="Steam depot ID")
+@click.option("--manifest", "manifest_id", required=True, help="Steam manifest ID")
+@click.option(
+    "--output-dir",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Download destination",
+)
+@click.pass_context
+def download(
+    ctx: click.Context,
+    game: str,
+    depot_id: int,
+    manifest_id: str,
+    output_dir: Path,
+):
+    games = ctx.obj["games"]
+    game_config = find_game(games, game)
+    if game_config is None:
+        raise click.ClickException(f"Unknown game: {game}")
+
+    click.echo(f"Downloading depot {depot_id} (manifest {manifest_id}) for {game}")
+    download_depot(
+        app_id=game_config.steam_app_id,
+        depot_id=depot_id,
+        manifest_id=manifest_id,
+        output_dir=output_dir,
+    )
+    click.echo(f"Download complete: {output_dir}")
 
 
 def _load_all_manifests(store: VersionStore, game_slug: str) -> dict[str, dict]:

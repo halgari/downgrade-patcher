@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from click.testing import CliRunner
+from unittest.mock import patch as mock_patch
 from downgrade_patcher.cli import main
 
 
@@ -126,3 +127,27 @@ def test_list_versions_empty(tmp_path: Path, sample_games_json: Path):
 
     assert result.exit_code == 0
     assert "No versions" in result.output
+
+
+def test_download_calls_depot_downloader(tmp_path: Path, sample_games_json: Path):
+    store_root = tmp_path / "store"
+    runner = CliRunner()
+
+    with mock_patch("downgrade_patcher.cli.download_depot") as mock_dl:
+        result = runner.invoke(main, [
+            "--store-root", str(store_root),
+            "--games-config", str(sample_games_json),
+            "download",
+            "--game", "skyrim-se",
+            "--depot", "489833",
+            "--manifest", "abc123",
+            "--output-dir", str(tmp_path / "staging"),
+        ])
+
+    assert result.exit_code == 0, result.output
+    mock_dl.assert_called_once_with(
+        app_id=489830,
+        depot_id=489833,
+        manifest_id="abc123",
+        output_dir=tmp_path / "staging",
+    )
