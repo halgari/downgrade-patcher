@@ -5,8 +5,8 @@ set -euo pipefail
 # Usage: ./scripts/download-all-skyrim.sh
 
 STEAM_USER="${STEAM_USER:?Set STEAM_USER environment variable}"
-STORE_ROOT="$HOME/user-tbaldrid/game_versions"
-STAGING_DIR="$HOME/user-tbaldrid/game_versions/_staging"
+STORE_ROOT="${STORE_ROOT:-./store}"
+STAGING_DIR="${STORE_ROOT}/_staging"
 GAMES_CONFIG="$(dirname "$0")/../config/games.json"
 APP_ID=489830
 

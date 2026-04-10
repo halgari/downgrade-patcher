@@ -7,7 +7,7 @@ into the store layout.
 
 Usage:
     python scripts/generate-manifests.py \
-        --store-root ~/user-tbaldrid/game_versions \
+        --store-root ./store \
         --games-config config/games.json \
         --game skyrim-se
 """

@@ -8,3 +8,7 @@ __pycache__/
 # xmake
 build/
 .xmake/
+
+# Runtime data
+store/
+cache/

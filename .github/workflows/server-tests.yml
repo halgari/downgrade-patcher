@@ -1,0 +1,41 @@
+name: Server & CLI Tests
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'common/**'
+      - 'cli/**'
+      - 'server/**'
+      - '.github/workflows/server-tests.yml'
+  pull_request:
+    paths:
+      - 'common/**'
+      - 'cli/**'
+      - 'server/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install packages
+        run: |
+          pip install -e "common/[dev]"
+          pip install -e "cli/[dev]"
+          pip install -e "server/[dev]"
+          pip install asgi-lifespan
+
+      - name: Test common
+        run: pytest common/tests/ -v
+
+      - name: Test CLI
+        run: pytest cli/tests/ -v
+
+      - name: Test server
+        run: pytest server/tests/ -v

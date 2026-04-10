@@ -1,0 +1,138 @@
+name: Client Build & Release
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/client-build.yml'
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - 'client/**'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang lld \
+            qt6-base-dev qt6-base-dev-tools libqt6network6 \
+            libzstd-dev libxxhash-dev
+
+      - name: Install xmake
+        run: |
+          curl -fsSL https://xmake.io/shget.text | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure (release + LTO + static)
+        working-directory: client
+        run: |
+          xmake f -m release \
+            --toolchain=clang \
+            --qt=/usr/lib/qt6 \
+            -y
+
+      - name: Build
+        working-directory: client
+        run: xmake -v
+
+      - name: Run tests
+        working-directory: client
+        run: |
+          xmake build tests
+          xmake run tests
+
+      - name: Package
+        working-directory: client
+        run: |
+          mkdir -p dist
+          cp build/linux/x86_64/release/downgrade-patcher dist/downgrade-patcher-linux-x64
+          cp -r resources dist/resources
+          cd dist && tar czf ../downgrade-patcher-linux-x64.tar.gz .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downgrade-patcher-linux-x64
+          path: client/downgrade-patcher-linux-x64.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          modules: 'qtnetworkauth'
+          cache: true
+
+      - name: Configure (release + LTO)
+        working-directory: client
+        run: |
+          xmake f -m release -y
+
+      - name: Build
+        working-directory: client
+        run: xmake -v
+
+      - name: Run tests
+        working-directory: client
+        run: |
+          xmake build tests
+          xmake run tests
+
+      - name: Package
+        working-directory: client
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/windows/x64/release/downgrade-patcher.exe dist/
+          cp -r resources dist/resources
+          # Bundle Qt DLLs
+          windeployqt dist/downgrade-patcher.exe --no-translations --no-opengl-sw 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downgrade-patcher-windows-x64
+          path: client/dist/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: downgrade-patcher-linux-x64
+          path: artifacts/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: downgrade-patcher-windows-x64
+          path: artifacts/windows/
+
+      - name: Package Windows
+        run: cd artifacts/windows && zip -r ../downgrade-patcher-windows-x64.zip .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/downgrade-patcher-linux-x64.tar.gz
+            artifacts/downgrade-patcher-windows-x64.zip
+          generate_release_notes: true
