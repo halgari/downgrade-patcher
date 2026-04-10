@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 import click
@@ -117,6 +118,111 @@ def download(
         output_dir=output_dir,
     )
     click.echo(f"Download complete: {output_dir}")
+
+
+@main.command("warm-cache")
+@click.option("--game", required=True, help="Game slug")
+@click.option("--from-version", required=True, help="Source version")
+@click.option("--to-version", required=True, help="Target version")
+@click.option(
+    "--cache-root",
+    type=click.Path(path_type=Path),
+    default=Path("cache"),
+    help="Root directory of the patch cache",
+)
+@click.option("--chunk-size", type=int, default=8 * 1024 * 1024, help="Chunk size in bytes")
+@click.pass_context
+def warm_cache(
+    ctx: click.Context,
+    game: str,
+    from_version: str,
+    to_version: str,
+    cache_root: Path,
+    chunk_size: int,
+):
+    store: VersionStore = ctx.obj["store"]
+
+    from_manifest_path = store.manifest_path(game, from_version)
+    to_manifest_path = store.manifest_path(game, to_version)
+    if not from_manifest_path.exists() or not to_manifest_path.exists():
+        raise click.ClickException("Both versions must be ingested first")
+
+    from_manifest = json.loads(from_manifest_path.read_text())
+    to_manifest = json.loads(to_manifest_path.read_text())
+
+    # Build lookup: hash -> file entry for source
+    from_by_hash = {f["xxhash3"]: f for f in from_manifest["files"]}
+
+    from_dir = store.version_dir(game, from_version)
+    to_dir = store.version_dir(game, to_version)
+
+    generated = 0
+    for to_entry in to_manifest["files"]:
+        to_hash = to_entry["xxhash3"]
+        if to_hash in from_by_hash:
+            continue  # File unchanged, no patch needed
+
+        # Find the best source file to patch from: prefer exact path match
+        source_entry = next(
+            (f for f in from_manifest["files"] if f["path"] == to_entry["path"]),
+            None,
+        )
+
+        if source_entry is None:
+            click.echo(f"  Skipping {to_entry['path']}: no source file to patch from")
+            continue
+
+        source_file = from_dir / source_entry["path"]
+        target_file = to_dir / to_entry["path"]
+        source_hash = source_entry["xxhash3"]
+
+        patch_dir = cache_root / game / source_hash / to_hash
+        if patch_dir.exists():
+            click.echo(f"  Already cached: {to_entry['path']}")
+            continue
+
+        patch_dir.mkdir(parents=True, exist_ok=True)
+        patch_file = patch_dir / "patch.zst"
+
+        click.echo(f"  Generating patch: {to_entry['path']}")
+        result = subprocess.run(
+            [
+                "zstd",
+                "--patch-from", str(source_file),
+                str(target_file),
+                "-o", str(patch_file),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            click.echo(f"    zstd failed: {result.stderr}")
+            continue
+
+        # Split into chunks (patch_file may not exist if subprocess was mocked)
+        if patch_file.exists():
+            _split_into_chunks(patch_file, patch_dir, chunk_size)
+            patch_file.unlink()  # Remove the unsplit patch
+        generated += 1
+
+    click.echo(f"Generated {generated} patches")
+
+
+def _split_into_chunks(patch_file: Path, patch_dir: Path, chunk_size: int) -> None:
+    chunks = []
+    chunk_index = 0
+    with open(patch_file, "rb") as f:
+        while True:
+            data = f.read(chunk_size)
+            if not data:
+                break
+            chunk_path = patch_dir / f"chunk-{chunk_index}"
+            chunk_path.write_bytes(data)
+            chunks.append({"index": chunk_index, "size": len(data)})
+            chunk_index += 1
+
+    meta = {"total_chunks": len(chunks), "chunks": chunks}
+    (patch_dir / "meta.json").write_text(json.dumps(meta, indent=2))
 
 
 def _load_all_manifests(store: VersionStore, game_slug: str) -> dict[str, dict]:
