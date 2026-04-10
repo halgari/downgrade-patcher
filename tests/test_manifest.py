@@ -1,6 +1,10 @@
 import json
 from pathlib import Path
-from downgrade_patcher.manifest import generate_manifest, build_manifest_index
+from downgrade_patcher.manifest import (
+    generate_manifest,
+    build_manifest_index,
+    build_hash_index,
+)
 from downgrade_patcher.config import GameConfig
 
 
@@ -94,3 +98,44 @@ def test_manifest_index_uses_exe_path_from_config(tmp_path: Path):
     index = build_manifest_index("skyrim-se", SKYRIM_CONFIG, manifests)
 
     assert len(index["versions"]) == 1
+
+
+def test_build_hash_index(tmp_path: Path):
+    v1_dir = tmp_path / "skyrim-se" / "1.5.97"
+    v1_dir.mkdir(parents=True)
+    (v1_dir / "game.exe").write_bytes(b"exe-v1")
+    (v1_dir / "Data").mkdir()
+    (v1_dir / "Data" / "main.bsa").write_bytes(b"bsa-v1")
+
+    manifest = generate_manifest("skyrim-se", "1.5.97", v1_dir)
+    manifests = {"1.5.97": manifest}
+
+    store_root = tmp_path
+    index = build_hash_index("skyrim-se", manifests, store_root)
+
+    for file_entry in manifest["files"]:
+        assert file_entry["xxhash3"] in index
+        paths = index[file_entry["xxhash3"]]
+        assert len(paths) >= 1
+        for p in paths:
+            assert Path(p).exists()
+
+
+def test_hash_index_deduplicates_across_versions(tmp_path: Path):
+    v1_dir = tmp_path / "skyrim-se" / "1.5.97"
+    v1_dir.mkdir(parents=True)
+    (v1_dir / "shared.dll").write_bytes(b"same-content")
+
+    v2_dir = tmp_path / "skyrim-se" / "1.6.1170"
+    v2_dir.mkdir(parents=True)
+    (v2_dir / "shared.dll").write_bytes(b"same-content")
+
+    m1 = generate_manifest("skyrim-se", "1.5.97", v1_dir)
+    m2 = generate_manifest("skyrim-se", "1.6.1170", v2_dir)
+    manifests = {"1.5.97": m1, "1.6.1170": m2}
+
+    store_root = tmp_path
+    index = build_hash_index("skyrim-se", manifests, store_root)
+
+    dll_hash = m1["files"][0]["xxhash3"]
+    assert len(index[dll_hash]) == 2

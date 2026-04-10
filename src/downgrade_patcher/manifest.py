@@ -22,6 +22,24 @@ def generate_manifest(game_slug: str, version: str, version_dir: Path) -> dict:
     }
 
 
+def build_hash_index(
+    game_slug: str,
+    manifests: dict[str, dict],
+    store_root: Path,
+) -> dict[str, list[str]]:
+    index: dict[str, list[str]] = {}
+    for version, manifest in manifests.items():
+        version_dir = store_root / game_slug / version
+        for file_entry in manifest["files"]:
+            file_hash = file_entry["xxhash3"]
+            abs_path = str(version_dir / file_entry["path"])
+            if file_hash not in index:
+                index[file_hash] = []
+            if abs_path not in index[file_hash]:
+                index[file_hash].append(abs_path)
+    return index
+
+
 def build_manifest_index(
     game_slug: str,
     game_config: GameConfig,
