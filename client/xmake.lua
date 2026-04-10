@@ -30,6 +30,7 @@ target("downgrade-patcher")
     add_includedirs("src")
     if is_plat("windows") then
         add_packages("zstd", "xxhash")
+        add_links("Qt6EntryPoint")
     else
         add_syslinks("zstd", "xxhash")
     end
