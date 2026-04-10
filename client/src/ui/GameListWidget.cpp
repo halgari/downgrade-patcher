@@ -1,4 +1,5 @@
 #include "ui/GameListWidget.h"
+#include "ui/SettingsDialog.h"
 
 #include <QHBoxLayout>
 #include <QDesktopServices>
@@ -72,6 +73,22 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
 
         m_layout->addWidget(card);
     }
+
+    // Footer
+    auto *footer = new QWidget(this);
+    auto *footerLayout = new QHBoxLayout(footer);
+    footerLayout->setContentsMargins(0, 8, 0, 0);
+
+    auto *settingsBtn = new QPushButton("\u2699 Settings", footer);
+    settingsBtn->setStyleSheet("border: none; color: #888; font-size: 11px;");
+    connect(settingsBtn, &QPushButton::clicked, this, [this]() {
+        SettingsDialog dialog(this);
+        dialog.exec();
+    });
+    footerLayout->addWidget(settingsBtn);
+    footerLayout->addStretch();
+
+    m_layout->addWidget(footer);
 
     m_layout->addStretch();
 }
