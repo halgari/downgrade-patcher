@@ -2,10 +2,13 @@
 
 #include <QMainWindow>
 #include <QStackedWidget>
+#include <QNetworkAccessManager>
 #include "api/ApiClient.h"
 #include "engine/SteamDetector.h"
 #include "ui/GameListWidget.h"
 #include "ui/PatchWidget.h"
+
+class QNetworkReply;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -25,4 +28,8 @@ private:
     GameListWidget *m_gameList;
     PatchWidget *m_patchWidget;
     QList<GameConfig> m_games;
+
+    void checkForUpdate();
+    void onUpdateCheckFinished(QNetworkReply *reply);
+    QNetworkAccessManager m_updateNam;
 };
