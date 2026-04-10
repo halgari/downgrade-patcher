@@ -27,7 +27,8 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
         }
         QWidget {
             color: #d4c4a0;
-            font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+            font-family: "Cormorant Garamond", "Palatino Linotype", Georgia, serif;
+            font-size: 13px;
         }
         QPushButton {
             background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
