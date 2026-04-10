@@ -1,18 +1,17 @@
 #include <QApplication>
-#include <QLabel>
-#include <QMainWindow>
+#include "api/ApiClient.h"
+#include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    app.setApplicationName("Downgrade Patcher");
+    app.setApplicationVersion("0.1.0");
 
-    QMainWindow window;
-    window.setWindowTitle("Downgrade Patcher");
-    window.resize(600, 400);
+    QUrl serverUrl("http://localhost:8000"); // TODO: make configurable
+    ApiClient apiClient(serverUrl);
 
-    auto *label = new QLabel("Downgrade Patcher - Loading...", &window);
-    label->setAlignment(Qt::AlignCenter);
-    window.setCentralWidget(label);
-
+    MainWindow window(&apiClient);
     window.show();
+
     return app.exec();
 }

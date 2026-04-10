@@ -10,6 +10,8 @@ target("downgrade-patcher")
     add_files("src/api/*.h")
     add_files("src/engine/*.cpp")
     add_files("src/engine/*.h")
+    add_files("src/ui/*.cpp")
+    add_files("src/ui/*.h")
     add_includedirs("src")
     add_syslinks("zstd", "xxhash")
 
