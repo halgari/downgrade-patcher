@@ -10,6 +10,12 @@ if is_mode("release") then
     set_policy("build.optimization.lto", true)
 end
 
+-- On Windows, use xmake package manager for zstd/xxhash
+-- On Linux, use system-installed libraries
+if is_plat("windows") then
+    add_requires("zstd", "xxhash")
+end
+
 target("downgrade-patcher")
     set_kind("binary")
     add_rules("qt.widgetapp")
@@ -22,7 +28,11 @@ target("downgrade-patcher")
     add_files("src/ui/*.cpp")
     add_files("src/ui/*.h")
     add_includedirs("src")
-    add_syslinks("zstd", "xxhash")
+    if is_plat("windows") then
+        add_packages("zstd", "xxhash")
+    else
+        add_syslinks("zstd", "xxhash")
+    end
 
 target("tests")
     set_kind("binary")
@@ -39,5 +49,9 @@ target("tests")
     add_files("src/engine/*.cpp")
     add_files("src/engine/*.h")
     add_includedirs("src")
-    add_syslinks("zstd", "xxhash")
+    if is_plat("windows") then
+        add_packages("zstd", "xxhash")
+    else
+        add_syslinks("zstd", "xxhash")
+    end
     set_default(false)

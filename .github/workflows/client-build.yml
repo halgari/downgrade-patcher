@@ -82,7 +82,7 @@ jobs:
       - name: Configure (release + LTO)
         working-directory: client
         run: |
-          xmake f -m release -y
+          xmake f -m release --toolchain=clang -y
 
       - name: Build
         working-directory: client
@@ -96,13 +96,13 @@ jobs:
 
       - name: Package
         working-directory: client
-        shell: bash
+        shell: pwsh
         run: |
-          mkdir -p dist
-          cp build/windows/x64/release/downgrade-patcher.exe dist/
-          cp -r resources dist/resources
+          New-Item -ItemType Directory -Force dist
+          Copy-Item build\windows\x64\release\downgrade-patcher.exe dist\
+          Copy-Item -Recurse resources dist\resources
           # Bundle Qt DLLs
-          windeployqt dist/downgrade-patcher.exe --no-translations --no-opengl-sw 2>/dev/null || true
+          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" dist\downgrade-patcher.exe --no-translations --no-opengl-sw
 
       - uses: actions/upload-artifact@v4
         with:
