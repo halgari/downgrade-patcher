@@ -135,6 +135,15 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
 
     layout->addStretch();
 
+    // Donate footer
+    auto *donateLabel = new QLabel(
+        "<a href='https://www.patreon.com/u11907933' style='color: #8b6914; text-decoration: none;'>"
+        "Support this project on Patreon</a>", this);
+    donateLabel->setOpenExternalLinks(true);
+    donateLabel->setAlignment(Qt::AlignCenter);
+    donateLabel->setStyleSheet("font-size: 11px;");
+    layout->addWidget(donateLabel);
+
     // Connections
     connect(m_backBtn, &QPushButton::clicked, this, &PatchWidget::backRequested);
     connect(m_targetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PatchWidget::onTargetVersionChanged);

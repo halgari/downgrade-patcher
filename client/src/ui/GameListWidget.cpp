@@ -163,6 +163,14 @@ void GameListWidget::setGames(const QList<GameConfig> &games, const QList<Detect
     footerLayout->addWidget(settingsBtn);
     footerLayout->addStretch();
 
+    auto *donateLabel = new QLabel(
+        "<a href='https://www.patreon.com/u11907933' style='color: #8b6914; text-decoration: none;'>"
+        "Support this project on Patreon</a>", footer);
+    donateLabel->setOpenExternalLinks(true);
+    donateLabel->setStyleSheet("font-size: 11px;");
+    footerLayout->addWidget(donateLabel);
+    footerLayout->addStretch();
+
     auto *versionLabel = new QLabel("v" + QCoreApplication::applicationVersion(), footer);
     versionLabel->setStyleSheet("color: #3a2a1a; font-size: 10px;");
     footerLayout->addWidget(versionLabel);
