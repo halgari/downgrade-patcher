@@ -3,6 +3,14 @@
 #include "api/ApiClient.h"
 #include "ui/MainWindow.h"
 
+// Static plugin imports for static Qt builds
+#ifdef Q_OS_WIN
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+Q_IMPORT_PLUGIN(QSchannelBackendPlugin)
+Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin)
+#endif
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     app.setApplicationName("Downgrade Patcher");
