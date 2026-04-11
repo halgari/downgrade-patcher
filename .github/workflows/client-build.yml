@@ -91,14 +91,20 @@ jobs:
 
       - name: Configure (static release + LTO)
         working-directory: client
+        env:
+          QT_DIR: C:\Qt6Static
         run: xmake f -m release --qt=C:\Qt6Static -y -v
 
       - name: Build
         working-directory: client
+        env:
+          QT_DIR: C:\Qt6Static
         run: xmake -v
 
       - name: Run tests
         working-directory: client
+        env:
+          QT_DIR: C:\Qt6Static
         run: |
           xmake build tests
           xmake run tests

@@ -33,6 +33,10 @@ target("downgrade-patcher")
         add_rules("qt.widgetapp_static")
         add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
         add_packages("zstd", "xxhash")
+        -- Static Qt TLS plugin — must be linked explicitly
+        add_linkdirs("$(env QT_DIR)/plugins/tls")
+        add_links("qschannelbackend")
+        add_syslinks("secur32", "ncrypt", "crypt32")
     else
         add_rules("qt.widgetapp")
         add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
