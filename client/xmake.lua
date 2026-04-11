@@ -9,15 +9,11 @@ if is_mode("release") then
 end
 
 if is_plat("windows") then
-    -- Windows: static build targeting MSVC ABI via clang
     set_toolchains("clang")
     set_runtimes("MT")
-
-    -- zstd and xxhash via xmake package manager (static)
     add_requires("zstd", {configs = {shared = false}})
     add_requires("xxhash", {configs = {shared = false}})
 else
-    -- Linux: system libraries, dynamic Qt
     set_toolchains("clang")
 end
 
@@ -32,8 +28,6 @@ target("downgrade-patcher")
     add_files("src/ui/*.h")
     add_includedirs("src")
     if is_plat("windows") then
-        -- Static Qt: use qt.widgetapp_static rule
-        -- Qt path set via: xmake f --qt=C:\Qt6Static
         add_rules("qt.widgetapp_static")
         add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
         add_packages("zstd", "xxhash")
@@ -57,8 +51,9 @@ target("tests")
     add_files("src/engine/*.h")
     add_includedirs("src")
     if is_plat("windows") then
-        add_rules("qt.console_static")
-        add_frameworks("QtCore", "QtTest", "QtNetwork", "QtConcurrent")
+        -- No qt.console_static rule exists, use widgetapp_static for tests too
+        add_rules("qt.widgetapp_static")
+        add_frameworks("QtCore", "QtTest", "QtNetwork", "QtConcurrent", "QtWidgets")
         add_packages("zstd", "xxhash")
     else
         add_rules("qt.console")
