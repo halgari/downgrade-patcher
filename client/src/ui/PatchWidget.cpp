@@ -19,7 +19,7 @@ PatchWidget::PatchWidget(ApiClient *apiClient, QWidget *parent)
 
     // Header
     auto *header = new QHBoxLayout();
-    m_backBtn = new QPushButton("\u2190 Back", this);
+    m_backBtn = new QPushButton("< Back", this);
     m_backBtn->setStyleSheet(
         "border: 1px solid #5c3d2e; background: transparent; "
         "color: #8a7a5a; padding: 6px 14px; font-size: 11px;"

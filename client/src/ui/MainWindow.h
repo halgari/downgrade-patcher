@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QNetworkAccessManager>
+#include <QMouseEvent>
 #include "api/ApiClient.h"
 #include "engine/SteamDetector.h"
 #include "ui/GameListWidget.h"
@@ -15,6 +16,10 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(ApiClient *apiClient, QWidget *parent = nullptr);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
 private slots:
     void onGamesReady(const QList<GameConfig> &games);
@@ -29,6 +34,7 @@ private:
     GameListWidget *m_gameList;
     PatchWidget *m_patchWidget;
     QList<GameConfig> m_games;
+    QPoint m_dragPos;
 
     void checkForUpdate();
     void onUpdateCheckFinished(QNetworkReply *reply);

@@ -6,6 +6,10 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QCoreApplication>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
 
 #define NEXUS_API_KEY "NEXUS_API_KEY_PLACEHOLDER"
 
@@ -17,8 +21,44 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
     , m_patchWidget(new PatchWidget(apiClient, this))
 {
     setWindowTitle("Downgrade Patcher");
-    setMinimumSize(600, 500);
-    setCentralWidget(m_stack);
+    setWindowFlags(Qt::FramelessWindowHint);
+    setMinimumSize(600, 520);
+
+    // Central widget with title bar + stacked content
+    auto *central = new QWidget(this);
+    auto *mainLayout = new QVBoxLayout(central);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+
+    // Custom title bar
+    auto *titleBar = new QWidget(central);
+    titleBar->setFixedHeight(32);
+    titleBar->setStyleSheet("background: #140e08; border-bottom: 1px solid #3a2a1a;");
+    auto *titleLayout = new QHBoxLayout(titleBar);
+    titleLayout->setContentsMargins(12, 0, 8, 0);
+    titleLayout->setSpacing(0);
+
+    auto *titleLabel = new QLabel("Downgrade Patcher", titleBar);
+    titleLabel->setStyleSheet(
+        "color: #8a7a5a; font-size: 11px; font-weight: bold; "
+        "letter-spacing: 1px; background: transparent; border: none;"
+    );
+    titleLayout->addWidget(titleLabel);
+    titleLayout->addStretch();
+
+    auto *closeBtn = new QPushButton("X", titleBar);
+    closeBtn->setFixedSize(28, 24);
+    closeBtn->setStyleSheet(
+        "QPushButton { background: transparent; border: none; color: #6a5a3a; "
+        "font-size: 13px; font-weight: bold; font-family: sans-serif; }"
+        "QPushButton:hover { color: #e05040; background: #2a1a10; }"
+    );
+    connect(closeBtn, &QPushButton::clicked, this, &QMainWindow::close);
+    titleLayout->addWidget(closeBtn);
+
+    mainLayout->addWidget(titleBar);
+    mainLayout->addWidget(m_stack, 1);
+    setCentralWidget(central);
 
     // Fantasy parchment theme
     setStyleSheet(R"(
@@ -68,18 +108,12 @@ MainWindow::MainWindow(ApiClient *apiClient, QWidget *parent)
         QComboBox::drop-down {
             subcontrol-origin: padding;
             subcontrol-position: center right;
-            border-left: 1px solid #6b4c1e;
-            width: 24px;
+            border: none;
+            width: 20px;
         }
         QComboBox::down-arrow {
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 6px solid #c4972a;
-        }
-        QComboBox::down-arrow:hover {
-            border-top-color: #e8b84a;
+            image: none;
+            border: none;
         }
         QComboBox QAbstractItemView {
             background: #2a1c14;
@@ -236,4 +270,18 @@ void MainWindow::onBackToGameList() {
 
 void MainWindow::onConnectionError(const QString &message) {
     m_gameList->showStatus("Could not connect to server.\n\n" + message + "\n\nCheck that the patch server is running.");
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        m_dragPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+    }
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event) {
+    if (event->buttons() & Qt::LeftButton) {
+        move(event->globalPosition().toPoint() - m_dragPos);
+        event->accept();
+    }
 }
