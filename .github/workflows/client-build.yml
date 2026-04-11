@@ -78,7 +78,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:\Qt6Static
-          key: qt6-static-6.8.3-msvc-x64-v1
+          key: qt6-static-6.8.3-msvc-x64-v2
           fail-on-cache-miss: true
 
       # Cache xmake packages (zstd, xxhash)
