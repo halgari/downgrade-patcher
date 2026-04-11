@@ -7,7 +7,6 @@
 #ifdef Q_OS_WIN
 #include <QtPlugin>
 Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
-Q_IMPORT_PLUGIN(QSchannelBackendPlugin)
 #endif
 
 int main(int argc, char *argv[]) {
