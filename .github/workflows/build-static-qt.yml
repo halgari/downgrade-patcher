@@ -31,38 +31,12 @@ jobs:
         run: |
           aqt install-src windows 6.8.3 --outputdir C:\QtSrc
 
-      - name: Configure static Qt
-        if: steps.cache.outputs.cache-hit != 'true'
-        shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cd C:\QtSrc\6.8.3\Src
-          cmake -G Ninja -B build ^
-            -DCMAKE_INSTALL_PREFIX=C:\Qt6Static ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DBUILD_SHARED_LIBS=OFF ^
-            -DINPUT_static_runtime=ON ^
-            -DQT_BUILD_EXAMPLES=OFF ^
-            -DQT_BUILD_TESTS=OFF ^
-            -DQT_BUILD_TOOLS_WHEN_CROSSCOMPILING=ON ^
-            -DINPUT_gui=ON ^
-            -DINPUT_widgets=ON ^
-            -DINPUT_network=ON ^
-            -DINPUT_concurrent=ON ^
-            -DINPUT_dbus=OFF ^
-            -DINPUT_opengl=OFF ^
-            -DINPUT_openssl=OFF ^
-            -DINPUT_sql=OFF ^
-            -DINPUT_testlib=ON ^
-            -DINPUT_printsupport=OFF ^
-            -DINPUT_multimedia=OFF ^
-            -DINPUT_quick=OFF ^
-            -DINPUT_qml=OFF
-
       - name: Build static Qt
         if: steps.cache.outputs.cache-hit != 'true'
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cmake --build C:\QtSrc\6.8.3\Src\build --parallel
-          cmake --install C:\QtSrc\6.8.3\Src\build
+          cd /d C:\QtSrc\6.8.3\Src
+          cmake -G Ninja -B build -DCMAKE_INSTALL_PREFIX=C:\Qt6Static -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DINPUT_static_runtime=ON -DQT_BUILD_EXAMPLES=OFF -DQT_BUILD_TESTS=OFF -DINPUT_gui=ON -DINPUT_widgets=ON -DINPUT_network=ON -DINPUT_concurrent=ON -DINPUT_dbus=OFF -DINPUT_opengl=OFF -DINPUT_openssl=OFF -DINPUT_sql=OFF -DINPUT_testlib=ON -DINPUT_printsupport=OFF -DINPUT_multimedia=OFF -DINPUT_quick=OFF -DINPUT_qml=OFF
+          cmake --build build --parallel
+          cmake --install build
