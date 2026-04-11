@@ -52,7 +52,6 @@ jobs:
         run: |
           mkdir -p dist
           cp build/linux/x86_64/release/downgrade-patcher dist/downgrade-patcher-linux-x64
-          cp -r resources dist/resources
           cd dist && tar czf ../downgrade-patcher-linux-x64.tar.gz .
 
       - uses: actions/upload-artifact@v4
@@ -110,7 +109,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force dist
           Copy-Item build\windows\x64\release\downgrade-patcher.exe dist\
-          Copy-Item -Recurse resources dist\resources
           $exe = Get-Item dist\downgrade-patcher.exe
           Write-Host "Single exe size: $([math]::Round($exe.Length / 1MB, 2)) MB"
 

@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/fonts">
+        <file alias="CormorantGaramond-Regular.ttf">fonts/CormorantGaramond-Regular.ttf</file>
+        <file alias="CormorantGaramond-Bold.ttf">fonts/CormorantGaramond-Bold.ttf</file>
+        <file alias="CormorantGaramond-Medium.ttf">fonts/CormorantGaramond-Medium.ttf</file>
+        <file alias="CormorantGaramond-Light.ttf">fonts/CormorantGaramond-Light.ttf</file>
+    </qresource>
+</RCC>

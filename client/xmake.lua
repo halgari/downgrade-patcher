@@ -21,6 +21,7 @@ end
 target("downgrade-patcher")
     set_kind("binary")
     add_files("src/main.cpp")
+    add_files("resources/resources.qrc")
     add_files("src/api/*.cpp")
     add_files("src/api/*.h")
     add_files("src/engine/*.cpp")
