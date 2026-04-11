@@ -1,8 +1,6 @@
 FROM python:3.12-slim
 
-# zstd CLI for patch generation
-RUN apt-get update && apt-get install -y --no-install-recommends zstd && \
-    rm -rf /var/lib/apt/lists/*
+# No zstd CLI needed — using pyzstd library directly
 
 WORKDIR /app
 
