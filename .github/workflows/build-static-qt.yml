@@ -18,25 +18,29 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:\Qt6Static
-          key: qt6-static-6.8.3-msvc-x64-v1
+          key: qt6-static-6.8.3-msvc-x64-v2
 
       - name: Install build tools
         if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          pip install aqtinstall
-          choco install ninja cmake --no-progress -y
+        run: choco install ninja cmake --no-progress -y
 
-      - name: Download Qt source
+      - name: Download qtbase source only
         if: steps.cache.outputs.cache-hit != 'true'
+        shell: pwsh
         run: |
-          aqt install-src windows 6.8.3 --outputdir C:\QtSrc
+          # Download just qtbase (Core, Gui, Widgets, Network, Concurrent, Test)
+          # This is ~50MB instead of ~800MB for the full Qt source
+          $url = "https://download.qt.io/official_releases/qt/6.8/6.8.3/submodules/qtbase-everywhere-src-6.8.3.zip"
+          Invoke-WebRequest -Uri $url -OutFile C:\qtbase.zip
+          Expand-Archive C:\qtbase.zip -DestinationPath C:\
+          Rename-Item C:\qtbase-everywhere-src-6.8.3 C:\QtBaseSrc
 
       - name: Build static Qt
         if: steps.cache.outputs.cache-hit != 'true'
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cd /d C:\QtSrc\6.8.3\Src
-          cmake -G Ninja -B build -DCMAKE_INSTALL_PREFIX=C:\Qt6Static -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DINPUT_static_runtime=ON -DQT_BUILD_EXAMPLES=OFF -DQT_BUILD_TESTS=OFF -DINPUT_gui=ON -DINPUT_widgets=ON -DINPUT_network=ON -DINPUT_concurrent=ON -DINPUT_dbus=OFF -DINPUT_opengl=OFF -DINPUT_openssl=OFF -DINPUT_sql=OFF -DINPUT_testlib=ON -DINPUT_printsupport=OFF -DINPUT_multimedia=OFF -DINPUT_quick=OFF -DINPUT_qml=OFF
+          cd /d C:\QtBaseSrc
+          cmake -G Ninja -B build -DCMAKE_INSTALL_PREFIX=C:\Qt6Static -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DQT_BUILD_EXAMPLES=OFF -DQT_BUILD_TESTS=OFF -DINPUT_dbus=OFF -DINPUT_opengl=OFF -DINPUT_openssl=OFF -DINPUT_sql=OFF -DINPUT_printsupport=OFF -DFEATURE_ico=OFF -DFEATURE_gif=OFF -DFEATURE_jpeg=OFF
           cmake --build build --parallel
           cmake --install build
