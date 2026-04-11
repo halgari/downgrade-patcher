@@ -6,6 +6,7 @@ on:
     paths:
       - 'client/**'
       - '.github/workflows/client-build.yml'
+      - '.github/workflows/build-static-qt.yml'
     tags:
       - 'v*'
   pull_request:
@@ -23,7 +24,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             clang lld \
-            qt6-base-dev qt6-base-dev-tools libqt6network6 libqt6concurrent6 \
+            qt6-base-dev qt6-base-dev-tools \
+            libqt6network6 libqt6concurrent6 \
             libzstd-dev libxxhash-dev
 
       - name: Install xmake
@@ -58,8 +60,12 @@ jobs:
           name: downgrade-patcher-linux-x64
           path: client/downgrade-patcher-linux-x64.tar.gz
 
+  build-static-qt:
+    uses: ./.github/workflows/build-static-qt.yml
+
   build-windows:
     runs-on: windows-latest
+    needs: build-static-qt
     steps:
       - uses: actions/checkout@v4
 
@@ -68,26 +74,25 @@ jobs:
         with:
           xmake-version: latest
 
-      # Cache xmake packages (static Qt build takes ~20 min first time)
+      - name: Restore static Qt cache
+        uses: actions/cache@v4
+        with:
+          path: C:\Qt6Static
+          key: qt6-static-6.8.3-msvc-x64-v1
+          fail-on-cache-miss: true
+
+      # Cache xmake packages (zstd, xxhash)
       - name: Cache xmake packages
         uses: actions/cache@v4
         with:
           path: |
-            ~/AppData/Local/.xmake/packages
-            ~/AppData/Local/.xmake/repositories
-          key: xmake-windows-static-${{ hashFiles('client/xmake.lua') }}
-          restore-keys: |
-            xmake-windows-static-
-
-      # Install build tools needed for Qt source build
-      - name: Install build tools
-        run: |
-          choco install ninja cmake --no-progress -y
-          pip install jinja2
+            ~\AppData\Local\.xmake\packages
+          key: xmake-win-pkgs-${{ hashFiles('client/xmake.lua') }}
+          restore-keys: xmake-win-pkgs-
 
       - name: Configure (static release + LTO)
         working-directory: client
-        run: xmake f -m release -y -v
+        run: xmake f -m release --qt=C:\Qt6Static -y -v
 
       - name: Build
         working-directory: client
@@ -106,8 +111,8 @@ jobs:
           New-Item -ItemType Directory -Force dist
           Copy-Item build\windows\x64\release\downgrade-patcher.exe dist\
           Copy-Item -Recurse resources dist\resources
-          # Verify it's a standalone exe (no Qt DLLs needed)
-          Get-Item dist\downgrade-patcher.exe | Select-Object Name,Length
+          $exe = Get-Item dist\downgrade-patcher.exe
+          Write-Host "Single exe size: $([math]::Round($exe.Length / 1MB, 2)) MB"
 
       - uses: actions/upload-artifact@v4
         with:

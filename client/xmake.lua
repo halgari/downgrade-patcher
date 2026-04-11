@@ -9,18 +9,15 @@ if is_mode("release") then
 end
 
 if is_plat("windows") then
+    -- Windows: static build targeting MSVC ABI via clang
     set_toolchains("clang")
     set_runtimes("MT")
 
-    -- Fully static deps via xmake package manager
+    -- zstd and xxhash via xmake package manager (static)
     add_requires("zstd", {configs = {shared = false}})
     add_requires("xxhash", {configs = {shared = false}})
-
-    -- Static Qt6 — xmake builds from source and caches
-    add_requires("qt6widgets", {configs = {shared = false}})
-    add_requires("qt6network", {configs = {shared = false}})
-    add_requires("qt6concurrent", {configs = {shared = false}})
 else
+    -- Linux: system libraries, dynamic Qt
     set_toolchains("clang")
 end
 
@@ -35,10 +32,11 @@ target("downgrade-patcher")
     add_files("src/ui/*.h")
     add_includedirs("src")
     if is_plat("windows") then
-        add_packages("qt6widgets", "qt6network", "qt6concurrent")
+        -- Static Qt: use qt.widgetapp_static rule
+        -- Qt path set via: xmake f --qt=C:\Qt6Static
+        add_rules("qt.widgetapp_static")
+        add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
         add_packages("zstd", "xxhash")
-        -- Windows subsystem + entry point
-        add_ldflags("/SUBSYSTEM:WINDOWS", {force = true})
     else
         add_rules("qt.widgetapp")
         add_frameworks("QtWidgets", "QtNetwork", "QtConcurrent")
@@ -59,7 +57,8 @@ target("tests")
     add_files("src/engine/*.h")
     add_includedirs("src")
     if is_plat("windows") then
-        add_packages("qt6widgets", "qt6network", "qt6concurrent")
+        add_rules("qt.console_static")
+        add_frameworks("QtCore", "QtTest", "QtNetwork", "QtConcurrent")
         add_packages("zstd", "xxhash")
     else
         add_rules("qt.console")
