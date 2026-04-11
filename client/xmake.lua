@@ -9,7 +9,8 @@ if is_mode("release") then
 end
 
 if is_plat("windows") then
-    set_toolchains("clang")
+    -- Windows: use MSVC for static Qt compatibility
+    set_toolchains("msvc")
     set_runtimes("MT")
     add_requires("zstd", {configs = {shared = false}})
     add_requires("xxhash", {configs = {shared = false}})
@@ -51,7 +52,6 @@ target("tests")
     add_files("src/engine/*.h")
     add_includedirs("src")
     if is_plat("windows") then
-        -- No qt.console_static rule exists, use widgetapp_static for tests too
         add_rules("qt.widgetapp_static")
         add_frameworks("QtCore", "QtTest", "QtNetwork", "QtConcurrent", "QtWidgets")
         add_packages("zstd", "xxhash")
